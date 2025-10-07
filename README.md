@@ -13,3 +13,4 @@ Supporting students's projects on WoT @ [Development Platforms for Automation](h
 
 
 Gruppo B: Salvatore Persico, Niki Hammond, Alessandro Rambaldi
+Gruppo C: Antonino Cardillo, Lorenzo Ferrari, Elia Strazzella
