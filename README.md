@@ -12,3 +12,4 @@ Supporting students's projects on WoT @ [Development Platforms for Automation](h
 [Discord](https://discord.com/invite/RJNYJsEgnb)
 
 
+Gruppo B: Salvatore Persico, Niki Hammond, Alessandro Rambaldi
