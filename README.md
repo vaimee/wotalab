@@ -11,5 +11,3 @@ Supporting students's projects on WoT @ [Development Platforms for Automation](h
 
 [Discord](https://discord.com/invite/RJNYJsEgnb)
 
-
-Gruppo C: Antonino Cardillo, Lorenzo Ferrari, Elia Strazzella
