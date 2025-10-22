@@ -1,1 +1,1 @@
-Gruppo C: Antonino Cardillo, Lorenzo Ferrari, Elia Strazzella
+Gruppo C: Alex Cambrini, Lorenzo Ferrari
