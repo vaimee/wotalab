@@ -1,1 +1,1 @@
-Gruppo B: Salvatore Persico, Niki Hammond, Alessandro Rambaldi
+Gruppo B: Antonino Cardillo, Nicolae Balaban, Alessandro Rambaldi
