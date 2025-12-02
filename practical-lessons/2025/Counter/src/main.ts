@@ -9,6 +9,9 @@ import {HttpServer,HttpClientFactory} from "@node-wot/binding-http"
     // Required steps to create a servient for creating a thing
     const servient = new Servient();
     servient.addServer(new HttpServer());
+
+
+
     console.log("Starting thing...")
     servient.start().then( async (WoT) => {
         // Then from here on you can use the WoT object to produce the thing

@@ -19,6 +19,7 @@ import { wait } from "./utils/wait";
     const lamp= new LampThing(wotRuntime,td)
     await lamp.start();
     console.log("-------------------------------------------")
+
     //TEST
     if(process.argv.length>=3){
         const cmd= process.argv[2];

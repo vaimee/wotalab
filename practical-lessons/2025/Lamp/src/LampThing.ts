@@ -23,7 +23,7 @@ export class LampThing{
         //Set handlers
         this.thing.setPropertyReadHandler("status",async ()=>{
             console.log("* handle property read: status");
-            return await this.usb.writeAndRead("status")
+            return await this.usb.writeAndRead("status") //ad arduino arriva "$status\r\n"
         })
         this.thing.setActionHandler("toggle", async()=>{
             console.log("* handle action: toggle");
