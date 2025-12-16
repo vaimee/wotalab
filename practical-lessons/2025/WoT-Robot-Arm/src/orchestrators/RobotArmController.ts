@@ -97,6 +97,11 @@ export class RobotArmController{
                 this.inputs.setKeyPressed(propertyID,buttonPressed)
             })
         }
+
+        //this.inputController.observeProperty("buttonSouth",async (data:any)=>{
+        //    const propertyValue= await data.value();
+        //    console.log(propertyValue)
+        //})
     }
 
     private async writeOutputVector(vec:number[]){

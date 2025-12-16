@@ -65,7 +65,7 @@ export class Filter{
         for(let i=0; i<x.length; i++){
             new_v[i]= 0; //(x[i]-(this.curr_state?this.curr_state[i]:0))/delta;
         }
-        return [x,new_v];
+        return [x,v];
     }
     
     private lpf(x:number[],v:number[],forced_input:number[],delta:number,ignore_indices:number[],config:{[key:string]:any}){
