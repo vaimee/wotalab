@@ -1,0 +1,1 @@
+import WoT from 'wot-typescript-definitions';

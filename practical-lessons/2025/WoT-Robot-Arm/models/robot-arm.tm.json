@@ -1,0 +1,45 @@
+{
+    "title": "robotarm",
+    "description": "A simple robot arm, controlled via servo motors",
+    "properties": {
+        "controlType": {
+            "type": "string",
+            "description": "switch between analog and serial control"
+        },
+        "servoRotation1": {
+            "type": "integer",
+            "description": "current servo rotation value",
+            "observable": true
+        },
+        "servoRotation2": {
+            "type": "integer",
+            "description": "current servo rotation value",
+            "observable": true
+        },
+        "servoRotation3": {
+            "type": "integer",
+            "description": "current servo rotation value",
+            "observable": true
+        },
+        "servoRotation4": {
+            "type": "integer",
+            "description": "current servo rotation value",
+            "observable": true
+        },
+        "servoRotation5": {
+            "type": "integer",
+            "description": "current servo rotation value",
+            "observable": true
+        }
+    },
+    "actions": {
+        "resetPosition": {
+            "description": "reset robot arm position to initial values"
+        }
+    },
+    "events": {
+        "genericError": {
+            "description": "general error"
+        }
+    }
+}

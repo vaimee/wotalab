@@ -1,0 +1,27 @@
+{
+  "@context": ["https://www.w3.org/2022/wot/td/v1.1"],
+  "title": "ModbusSemaphore",
+  "securityDefinitions": { 
+    "nosec": { "scheme": "nosec" }
+  },
+  "security": "nosec",
+  "properties": {
+    "rawState": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2,
+      "readOnly": false,
+      "forms": [
+        {
+          "href": "modbus+tcp://localhost:8502/1/0",
+          "op": ["readproperty", "writeproperty"],
+          "contentType": "application/octet-stream;length=2",
+          "modv:entity": "HoldingRegister",
+          "modv:pollingTime": 1000
+        }
+      ]
+    }
+  },
+  "actions": {},
+  "events": {}
+}
