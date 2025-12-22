@@ -1,0 +1,20 @@
+{
+    "title": "dhtsensor",
+    "description": "A simple robot arm, controlled via servo motors",
+    "properties": {
+        "temperature": {
+            "type": "number",
+            "description": "curr temp",
+            "observable": true,
+            "readOnly": true
+        },
+        "humidity": {
+            "type": "number",
+            "description": "curr hum",
+            "observable": true,
+            "readOnly": true
+        }
+    },
+    "actions": {},
+    "events": {}
+}

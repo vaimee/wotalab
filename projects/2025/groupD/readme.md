@@ -1,4 +1,4 @@
 Group members:
-- Seck Mactar Ibrahima
-- Alessandro DOminici
-- Jacopo Maria Spitaleri
+- Mactar Ibrahima Seck
+- Alessandro Dominici
+- Jacopo Maria spitaleri 

@@ -1,0 +1,57 @@
+{
+    "title": "controller",
+    "description": "An xbox controller",
+    "properties": {
+        "analogLever":{
+            "type": "object",
+            "description": "",
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                }
+            },
+            "observable": true
+        },
+        "analogLeverRight":{
+            "type": "object",
+            "description": "",
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                }
+            },
+            "observable": true
+        },
+        "trigger": {
+            "type": "boolean",
+            "description": "the front trigger in the left",
+            "observable": true
+        },
+        "triggerRight": {
+            "type": "boolean",
+            "description": "the front trigger in the right",
+            "observable": true
+        },
+        "zLever": {
+            "type": "number",
+            "description": "the front lever in the left",
+            "observable": true
+        },
+        "zLeverRight": {
+            "type": "number",
+            "description": "the front lever in the right",
+            "observable": true
+        },
+        "buttonSouth": {
+            "type": "boolean",
+            "description": "the a button",
+            "observable": true
+        }
+    }
+}

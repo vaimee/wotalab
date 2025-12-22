@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <title>Babylon.js – Setup base</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        #DTDashboard{
+            width: 100%;
+            height:100%;
+            display:flex;
+        }
+        #InfoPanel{
+            width: 30vw;
+            height:100%;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="DTDashboard">
+    <div id="InfoPanel">
+        <h3>RobotArm</h3>
+        <div id="ThingInfo">
+            <p>td: unknown</p>
+            <p>status: offline</p>
+            <p>control type: analog</p>
+            <p>rotation vector: [offline]</p>
+        </div>
+    </div>
+    <div>
+        <canvas id="renderCanvas"></canvas>
+    </div>
+
+</div>
+
+<!-- Babylon.js CDN -->
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+<script>
+    //GLOBAL CONTEXT
+    const thingCache= {
+        "tdUrl":"http://localhost:8080/robotarm"
+    };
+
+    //ENTITIES
+    class RobotArm{
+        constructor(scene){
+            this.anchorPosition=[0,0];//x,y
+            this.rotationVector=[0,0,0,0,0];//servo 1-5
+            this.components={};
+            this.scene=scene
+            this.cache=thingCache;
+        }
+        init(){
+            //BABYLON.MeshBuilder.Create
+            const baseHeight=0.2;
+            const base = BABYLON.MeshBuilder.CreateCylinder(
+                "cylinder",
+                { height: baseHeight, diameter: 2 },
+                this.scene
+            );
+            base.position.set(0, baseHeight/2, 0); 
+            this.components["base"]=base;
+            //const baseJoint = new BABYLON.TransformNode("joint", this.scene);
+            //baseJoint.parent= base;
+            //baseJoint.position.set(0,baseHeight,0);
+
+            //Create segments
+            const segmentHeight=1.5;
+            const segmentRadius=0.15
+            const Nsegments=2;
+
+            let last_segment=base;
+
+
+            for(let i=0; i<Nsegments;i++){
+                //Create new joint
+                const new_joint = new BABYLON.TransformNode("joint", this.scene);
+                new_joint.position.set(0,i==0?baseHeight/2:segmentHeight/2,0);
+                new_joint.parent= last_segment;
+                this.components["j"+i]=new_joint;
+
+                const s1 = BABYLON.MeshBuilder.CreateCapsule(
+                    "capsule",
+                    { height: segmentHeight, radius: segmentRadius },
+                    this.scene
+                );
+                s1.position.set(0, segmentHeight/2, 0); 
+                s1.parent=new_joint
+                this.components["s"+i]=s1;
+
+                last_segment= s1;
+            }
+
+            //HAND
+            const handJoint = new BABYLON.TransformNode("joint", this.scene);
+            handJoint.position.set(0,segmentHeight/2,0);
+            handJoint.parent= last_segment;
+            this.components["handJoint"]=handJoint;
+            const handBaseHeight= 0.2
+            const handBaseWidth= 0.5
+            const handBase= BABYLON.MeshBuilder.CreateBox(
+                "box",
+                { width: handBaseWidth, height:handBaseHeight, depth:handBaseWidth },
+                this.scene
+            );
+            handBase.position.set(0, handBaseHeight/2, 0);
+            handBase.parent= handJoint;
+            this.components["handBase"]=handBase;
+            
+            //fingers
+            const f1joint= new BABYLON.TransformNode("joint", this.scene);
+            f1joint.position.set(-handBaseWidth/2,handBaseHeight/2,0);
+            f1joint.parent= handBase;
+            this.components["f1joint"]=f1joint
+            const fingerSegmentSize= 0.5
+            const f1= BABYLON.MeshBuilder.CreateCapsule(
+                "capsule",
+                { height:fingerSegmentSize, radius:0.1 },
+                this.scene
+            );
+            f1.position.set(0, fingerSegmentSize/2, 0);
+            f1.parent= f1joint;
+            this.components["f1"]=f1;
+
+            const f2joint= new BABYLON.TransformNode("joint", this.scene);
+            f2joint.position.set(handBaseWidth/2,handBaseHeight/2,0);
+            f2joint.parent= handBase;
+            this.components["f2joint"]=f2joint
+            const f2= BABYLON.MeshBuilder.CreateCapsule(
+                "capsule",
+                { height:fingerSegmentSize, radius:0.1 },
+                this.scene
+            );
+            f2.position.set(0, fingerSegmentSize/2, 0);
+            f2.parent= f2joint;
+            this.components["f2"]=f2;
+        }
+        update(){
+            if(!this.cache.hasOwnProperty("rotationVector")) return;
+            const vec= this.cache["rotationVector"];
+            //base
+            const baseRot= -(parseInt(`${vec[0]}`)-180)*Math.PI/180; //radiants
+            const servo1Rot= (parseInt(`${vec[1]}`)-78)*Math.PI/180;
+            this.components["j0"].rotationQuaternion=
+                BABYLON.Quaternion.FromEulerAngles(0,baseRot,servo1Rot)
+            const servo2Rot= -(parseInt(`${vec[2]}`)-82)*Math.PI/180;
+            this.components["j1"].rotationQuaternion=
+                BABYLON.Quaternion.FromEulerAngles(0,0,servo2Rot)
+            const handBaseRot= -parseInt(`${vec[3]}`)*Math.PI/180;
+            this.components["handJoint"].rotationQuaternion=
+                BABYLON.Quaternion.FromEulerAngles(0,handBaseRot,0)
+            const fingersRot= parseInt(`${vec[4]}`)*Math.PI/180;
+            this.components["f1joint"].rotationQuaternion=
+                BABYLON.Quaternion.FromEulerAngles(0,0,-fingersRot+Math.PI/2)
+            this.components["f2joint"].rotationQuaternion=
+                BABYLON.Quaternion.FromEulerAngles(0,0,+fingersRot-Math.PI/2)
+        }
+    }
+
+    async function wait(ms){
+        return new Promise(resolve=>{
+            setTimeout(resolve,ms);
+        })
+    }
+
+    (async function main(){
+        console.log("Starting babylon...")
+        startBabylon()
+        cacheUpdateLoop(thingCache)
+        uiUpdateLoop(thingCache)
+    })()
+
+    async function startBabylon(){
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+        const [scene,robotArm] = createScene(canvas,engine);
+        engine.runRenderLoop(() => {
+            robotArm.update();
+            scene.render();
+        });
+
+        window.addEventListener("resize", () => {
+            engine.resize();
+        });
+    }
+
+    function createScene(canvas,engine){
+        const scene = new BABYLON.Scene(engine);
+        scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.1, 1);
+        //scene.debugLayer.show()
+        /* CAMERA */
+        const camera = new BABYLON.ArcRotateCamera(
+            "camera",
+            Math.PI / 4,
+            Math.PI / 3,
+            10,
+            BABYLON.Vector3.Zero(),
+            scene
+        );
+        camera.attachControl(canvas, true);
+
+        /* LUCE */
+        const light = new BABYLON.HemisphericLight(
+            "light",
+            new BABYLON.Vector3(0, 1, 0),
+            scene
+        );
+        light.intensity = 0.9;
+
+        /* PIANO */
+        const ground = BABYLON.MeshBuilder.CreateGround(
+            "ground",
+            { width: 10, height: 10 },
+            scene
+        );
+
+        //ROBOT
+        const robotArm= new RobotArm(scene)
+        robotArm.init();
+        /*//CUBO
+        const box = BABYLON.MeshBuilder.CreateBox(
+            "box",
+            { size: 1 },
+            scene
+        );
+        box.position.set(-2, 0.5, 0);
+
+        //SFERA
+        const sphere = BABYLON.MeshBuilder.CreateSphere(
+            "sphere",
+            { diameter: 1 },
+            scene
+        );
+        sphere.position.set(0, 0.5, 0);
+
+        //CAPSULA
+        const capsule = BABYLON.MeshBuilder.CreateCapsule(
+            "capsule",
+            { height: 1.5, radius: 0.3 },
+            scene
+        );
+        capsule.position.set(2, 0.75, 0);*/
+
+        return [scene,robotArm];
+    };
+
+    async function cacheUpdateLoop(cache){
+        console.log("Starting update cache loop...")
+        const fs= 15;
+        const Ts= 1/fs;
+        let running=true;
+        while(running){
+            try{
+                const response= await fetch(cache["tdUrl"]) ///properties/count");
+                const td= await response.json()
+                cache["connected"]=true;
+                const controlType= await (await fetch(td.properties["controlType"].forms[0].href)).json()
+                cache["controlType"]=controlType
+                let rotationVec= [];
+                for(let i=0; i<5; i++){
+                    const rot= await (await fetch(td.properties["servoRotation"+(i+1)].forms[0].href)).json()
+                    rotationVec.push(rot)
+                }
+                cache["rotationVector"]=rotationVec
+
+            }catch(e){
+                console.log(e)
+                cache["connected"]=false;
+            }finally{
+                await wait(Ts*1000)
+            }
+        }
+    }
+    async function uiUpdateLoop(cache){
+        console.log("Starting update ui loop...")
+        const fs= 2;
+        const Ts= 1/fs;
+        let running=true;
+        while(running){
+            try{
+                let content="<p>td: "+cache["tdUrl"]+"</p><p>status: offline</p>"
+                if(cache["connected"]){
+                    content=`
+                    <p>td: ${cache["tdUrl"]}</p>
+                    <p>status: online</p> 
+                    <p>control type: ${cache["controlType"]||"unknown"}</p>
+                    <p>rotation vector: ${cache["rotationVector"]||"unknown"}</p>
+                    `
+                }
+                document.getElementById("ThingInfo").innerHTML=content;
+            }catch(e){
+                console.log(e)
+            }finally{
+                await wait(Ts*1000)
+            }
+        }
+    }
+
+
+</script>
+
+</body>
+</html>

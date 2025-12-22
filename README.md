@@ -11,3 +11,19 @@ Supporting students's projects on WoT @ [Development Platforms for Automation](h
 
 [Discord](https://discord.com/invite/RJNYJsEgnb)
 
+# Practical lessons code
+All the code seen during practical lessons will be stored in this repository under /practical-lessons.  
+Each wot example is contained in its own sub folder, and can be run as follows:  
+1. Move to the example subfolder (in this case Counter example):
+`cd ./practical-lessons/2025/Counter`
+2. Install dependencies (nodejs):
+`npm i`
+3. Run
+```
+npm run start:build
+# Alternatively separated:
+npm run build
+npm run start
+```
+4. Run with initial test: 
+`npm run start:build -- test`

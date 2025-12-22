@@ -1,0 +1,18 @@
+{
+    "@context": ["https://www.w3.org/2022/wot/td/v1.1"],
+    "title": "Lamp",
+    "description": "A remote controllable lamp",
+    "properties": {
+        "status": {
+            "description": "current status of the lamp (on|off)",
+            "type": "string",
+            "readOnly": true
+        }
+    },
+    "actions": {
+        "toggle": {
+            "description": "Turn the lamp on or off"
+        }
+    },
+    "events": {}
+}

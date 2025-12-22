@@ -1,1 +1,3 @@
-Gruppo C: Alex Cambrini, Lorenzo Ferrari
+Gruppo C: 
+Alex Cambrini - alex.cambrini@studio.unibo.it
+Lorenzo Ferrari - lorenzo.ferrari27@studio.unibo.it
