@@ -1,3 +1,6 @@
+Group members:
+- Matteo Aloe
+- Elia Strazzella
 # Report Progetto
 
 ---
