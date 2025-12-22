@@ -30,6 +30,7 @@ npm run start
 
 # Instructions for projects
 Please consider the following as an example of a valid project: [Example](https://github.com/eclipse-thingweb/test-things/tree/main/mashups/smart-home)
+
 Each project should contain:
 - at least one Thing for each project member
 - the TD should include semantic tags
