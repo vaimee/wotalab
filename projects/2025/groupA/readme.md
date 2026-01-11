@@ -2,7 +2,7 @@
 
 ### Obiettivo del progetto
 
-Avere sensori di temperatura in più stanze, esposti come “Things” WoT, in modo che client WoT possano leggere i dati, ricevere eventi e controllare il riscaldamento in modo standardizzato.
+L'obiettivo del progetto è avere sensori di temperatura in più stanze, esposti come “Things” WoT, in modo che client WoT possano leggere i dati, ricevere eventi e controllare il riscaldamento in modo standardizzato.
 
 
 ### Funzionalità previste
