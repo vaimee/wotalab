@@ -1,4 +1,4 @@
-# Sistema di Irrigazione Intelligente (Progetto)
+# Sistema di Irrigazione Intelligente ( ✅ APPROVATO)
 
 ## Introduzione
 
