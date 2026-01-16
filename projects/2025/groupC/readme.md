@@ -1,4 +1,4 @@
-# Progetto
+# Progetto (✅ APPROVATO)
 ## Gestione intelligente di una stanza tramite Web of Things
 
 
