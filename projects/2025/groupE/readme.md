@@ -1,3 +1,4 @@
+(✅ APPROVATO)
 ## Membri del Team
 
 | Nome e Cognome       | Email Istituzionale              |
