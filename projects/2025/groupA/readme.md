@@ -1,4 +1,4 @@
-# Riscaldamento automatizzato
+# Riscaldamento automatizzato (:white_check_mark: APPROVATO)
 
 ### Obiettivo del progetto
 
