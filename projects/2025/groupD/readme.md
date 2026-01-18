@@ -153,6 +153,6 @@ consente di sperimentare:
 
 ## Sviluppato da
 
-- Alessandro Dominici
-- Jacopo Spitaleri
-- Mactar Seck Ibrahima
+- Alessandro Dominici jacopo.spitaleri@studio.unibo.it
+- Jacopo Spitaleri alessandro.dominici2@studio.unibo.it
+- Mactar Seck Ibrahima mactaribrahima.seck@studio.unibo.it
