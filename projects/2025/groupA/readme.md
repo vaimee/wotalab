@@ -72,7 +72,7 @@ Ogni Thing espone una Thing Description (TD) che definisce:
 
 - Backend / Things: Node.js, node-wot
 
-- Frontend: HTML, CSS, Javascript
+- Frontend: HTML, CSS, Typescript
 
 - Protocolli: HTTP, MQTT
 
