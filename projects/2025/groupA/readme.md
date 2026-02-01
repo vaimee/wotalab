@@ -70,9 +70,9 @@ Ogni Thing espone una Thing Description (TD) che definisce:
 
 ### Tecnologie utilizzate
 
-- Backend / Things: Node.js, node-wot
+- Backend / Things: Node.js, node-wot, Typescript
 
-- Frontend: HTML, CSS, Typescript
+- Frontend: HTML, CSS, Javascript
 
 - Protocolli: HTTP, MQTT
 
