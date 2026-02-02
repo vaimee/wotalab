@@ -1,0 +1,51 @@
+{
+  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "title": "windowSensor",
+  "description": "Window open/closed sensor for a smart room",
+
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": ["nosec_sc"],
+
+  "properties": {
+    "isOpen": {
+      "type": "boolean",
+      "title": "Window Open",
+      "description": "True if the window is open, false if it is closed",
+      "readOnly": true,
+      "observable": true
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Sensor runtime status",
+      "enum": ["online", "offline", "error"],
+      "readOnly": true,
+      "observable": true
+    }
+  },
+
+  "actions": {
+    "reset": {
+      "description": "Reset internal sensor state (e.g., clear last error)"
+    }
+  },
+
+  "events": {
+    "windowStateChanged": {
+      "description": "Emitted when the window state changes (open/closed)",
+      "data": {
+        "type": "boolean"
+      }
+    },
+    "sensorError": {
+      "description": "Emitted when the sensor adapter detects an error",
+      "data": {
+        "type": "string"
+      }
+    }
+  }
+}
