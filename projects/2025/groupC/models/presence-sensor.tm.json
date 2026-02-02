@@ -1,0 +1,51 @@
+{
+  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "title": "presenceSensor",
+  "description": "Presence/occupancy sensor for a smart room",
+
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": ["nosec_sc"],
+
+  "properties": {
+    "presence": {
+      "type": "boolean",
+      "title": "Presence",
+      "description": "True if the room is occupied, false otherwise",
+      "readOnly": true,
+      "observable": true
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Sensor runtime status",
+      "enum": ["online", "offline", "error"],
+      "readOnly": true,
+      "observable": true
+    }
+  },
+
+  "actions": {
+    "reset": {
+      "description": "Reset internal sensor state (e.g., clear last error)"
+    }
+  },
+
+  "events": {
+    "presenceChanged": {
+      "description": "Emitted when presence changes (occupied/unoccupied)",
+      "data": {
+        "type": "boolean"
+      }
+    },
+    "sensorError": {
+      "description": "Emitted when the sensor adapter detects an error",
+      "data": {
+        "type": "string"
+      }
+    }
+  }
+}
