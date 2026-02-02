@@ -1,0 +1,53 @@
+{
+  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "title": "lightSensor",
+  "description": "Ambient light sensor for a smart room",
+
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": ["nosec_sc"],
+
+  "properties": {
+    "illuminanceLux": {
+      "type": "number",
+      "title": "Illuminance",
+      "description": "Ambient light level measured in lux",
+      "minimum": 0,
+      "maximum": 100000,
+      "readOnly": true,
+      "observable": true
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Sensor runtime status",
+      "enum": ["online", "offline", "error"],
+      "readOnly": true,
+      "observable": true
+    }
+  },
+
+  "actions": {
+    "reset": {
+      "description": "Reset internal sensor state (e.g., clear last error)"
+    }
+  },
+
+  "events": {
+    "illuminanceChanged": {
+      "description": "Emitted when illuminance changes significantly",
+      "data": {
+        "type": "number"
+      }
+    },
+    "sensorError": {
+      "description": "Emitted when the sensor adapter detects an error",
+      "data": {
+        "type": "string"
+      }
+    }
+  }
+}
