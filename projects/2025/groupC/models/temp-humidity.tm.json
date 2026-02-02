@@ -1,0 +1,58 @@
+{
+  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "title": "tempHumiditySensor",
+  "description": "Temperature and humidity sensor for a smart room",
+
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": ["nosec_sc"],
+
+  "properties": {
+    "temperatureC": {
+      "type": "number",
+      "title": "Temperature",
+      "description": "Air temperature in Celsius",
+      "unit": "degree celsius",
+      "minimum": -10,
+      "maximum": 50,
+      "readOnly": true,
+      "observable": true
+    },
+    "humidityPct": {
+      "type": "number",
+      "title": "Relative Humidity",
+      "description": "Relative humidity percentage",
+      "unit": "percent",
+      "minimum": 0,
+      "maximum": 100,
+      "readOnly": true,
+      "observable": true
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Sensor runtime status",
+      "enum": ["online", "offline", "error"],
+      "readOnly": true,
+      "observable": true
+    }
+  },
+
+  "actions": {
+    "reset": {
+      "description": "Reset internal sensor state (e.g., clear last error)"
+    }
+  },
+
+  "events": {
+    "sensorError": {
+      "description": "Emitted when the sensor adapter detects an error",
+      "data": {
+        "type": "string"
+      }
+    }
+  }
+}
