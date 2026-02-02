@@ -1,0 +1,68 @@
+{
+  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "title": "relayActuator",
+  "description": "Relay actuator for a smart room",
+
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": ["nosec_sc"],
+
+  "properties": {
+    "isOn": {
+      "type": "boolean",
+      "title": "Relay State",
+      "description": "True if the relay is ON (device powered), false if OFF",
+      "readOnly": false,
+      "observable": true
+    },
+    "mode": {
+      "type": "string",
+      "title": "Control Mode",
+      "description": "Manual mode ignores automation; auto mode allows the reasoner to control the relay",
+      "enum": ["manual", "auto"],
+      "readOnly": false,
+      "observable": true
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "description": "Actuator runtime status",
+      "enum": ["online", "offline", "error"],
+      "readOnly": true,
+      "observable": true
+    }
+  },
+
+  "actions": {
+    "turnOn": {
+      "description": "Turn relay ON"
+    },
+    "turnOff": {
+      "description": "Turn relay OFF"
+    },
+    "toggle": {
+      "description": "Toggle relay state"
+    },
+    "reset": {
+      "description": "Reset internal actuator state (e.g., clear last error)"
+    }
+  },
+
+  "events": {
+    "stateChanged": {
+      "description": "Emitted when relay state changes",
+      "data": {
+        "type": "boolean"
+      }
+    },
+    "actuatorError": {
+      "description": "Emitted when the actuator detects an error",
+      "data": {
+        "type": "string"
+      }
+    }
+  }
+}
