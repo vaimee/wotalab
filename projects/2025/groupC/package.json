@@ -1,0 +1,16 @@
+{
+  "name": "wot-smart-room",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/main.ts"
+  },
+  "dependencies": {
+    "@node-wot/binding-http": "^0.8.15",
+    "@node-wot/core": "^0.8.15"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
