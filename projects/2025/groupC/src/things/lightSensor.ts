@@ -1,4 +1,5 @@
 import { loadTdJson } from "../td/loadTd.js";
+import { startLightSimulation } from "../sensors/lightSensorSim.js";
 
 type WoTLike = {
   produce: (td: any) => Promise<any>;
@@ -22,20 +23,34 @@ export async function createLightSensor(wot: WoTLike) {
   thing.setPropertyReadHandler("status", async () => state.status);
 
   thing.setActionHandler("reset", async () => {
-    state.status = "online";
+    await setStatus("online");
     return true;
   });
 
-  const setIlluminanceLux = (v: number) => {
+  const setIlluminanceLux = async (v: number) => {
     const next = Math.max(0, Math.min(100000, Number(v)));
     const changed = Math.abs(next - state.illuminanceLux) >= 10;
     state.illuminanceLux = next;
+    await safeWrite(thing, "illuminanceLux", state.illuminanceLux);
     if (changed) thing.emitEvent("illuminanceChanged", state.illuminanceLux);
   };
 
-  const setStatus = (v: LightState["status"]) => {
+  const setStatus = async (v: LightState["status"]) => {
     state.status = v;
+    await safeWrite(thing, "status", state.status);
   };
 
-  return { thing, state, setIlluminanceLux, setStatus };
+  const stopSim = startLightSimulation({
+    getLux: () => state.illuminanceLux,
+    getStatus: () => state.status,
+    setLux: setIlluminanceLux,
+  });
+
+  return { thing, state, setIlluminanceLux, setStatus, stopSim };
+}
+
+async function safeWrite(thing: any, name: string, value: unknown) {
+  try {
+    await thing.writeProperty(name, value);
+  } catch {}
 }

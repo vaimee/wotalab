@@ -1,4 +1,5 @@
 import { loadTdJson } from "../td/loadTd.js";
+import { startWindowSimulation } from "../sensors/windowSensorSim.js";
 
 type WoTLike = {
   produce: (td: any) => Promise<any>;
@@ -22,20 +23,34 @@ export async function createWindowSensor(wot: WoTLike) {
   thing.setPropertyReadHandler("status", async () => state.status);
 
   thing.setActionHandler("reset", async () => {
-    state.status = "online";
+    await setStatus("online");
     return true;
   });
 
-  const setIsOpen = (v: boolean) => {
+  const setIsOpen = async (v: boolean) => {
     const next = Boolean(v);
     const changed = next !== state.isOpen;
     state.isOpen = next;
+    await safeWrite(thing, "isOpen", state.isOpen);
     if (changed) thing.emitEvent("windowStateChanged", state.isOpen);
   };
 
-  const setStatus = (v: WindowState["status"]) => {
+  const setStatus = async (v: WindowState["status"]) => {
     state.status = v;
+    await safeWrite(thing, "status", state.status);
   };
 
-  return { thing, state, setIsOpen, setStatus };
+  const stopSim = startWindowSimulation({
+    getIsOpen: () => state.isOpen,
+    getStatus: () => state.status,
+    setIsOpen,
+  });
+
+  return { thing, state, setIsOpen, setStatus, stopSim };
+}
+
+async function safeWrite(thing: any, name: string, value: unknown) {
+  try {
+    await thing.writeProperty(name, value);
+  } catch {}
 }

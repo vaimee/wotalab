@@ -1,4 +1,6 @@
 import { loadTdJson } from "../td/loadTd.js";
+import { startPresenceSimulation } from "../sensors/presenceSensorSim.js";
+
 type WoTLike = {
   produce: (td: any) => Promise<any>;
 };
@@ -8,7 +10,7 @@ export type PresenceState = {
   status: "online" | "offline" | "error";
 };
 
-export async function createPresenceSensor(wot:WoTLike) {
+export async function createPresenceSensor(wot: WoTLike) {
   const td = loadTdJson("presence-sensor.tm.json");
   const thing = await wot.produce(td);
 
@@ -21,20 +23,34 @@ export async function createPresenceSensor(wot:WoTLike) {
   thing.setPropertyReadHandler("status", async () => state.status);
 
   thing.setActionHandler("reset", async () => {
-    state.status = "online";
+    await setStatus("online");
     return true;
   });
 
-  const setPresence = (v: boolean) => {
+  const setPresence = async (v: boolean) => {
     const next = Boolean(v);
     const changed = next !== state.presence;
     state.presence = next;
+    await safeWrite(thing, "presence", state.presence);
     if (changed) thing.emitEvent("presenceChanged", state.presence);
   };
 
-  const setStatus = (v: PresenceState["status"]) => {
+  const setStatus = async (v: PresenceState["status"]) => {
     state.status = v;
+    await safeWrite(thing, "status", state.status);
   };
 
-  return { thing, state, setPresence, setStatus };
+  const stopSim = startPresenceSimulation({
+    getPresence: () => state.presence,
+    getStatus: () => state.status,
+    setPresence,
+  });
+
+  return { thing, state, setPresence, setStatus, stopSim };
+}
+
+async function safeWrite(thing: any, name: string, value: unknown) {
+  try {
+    await thing.writeProperty(name, value);
+  } catch {}
 }

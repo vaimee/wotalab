@@ -28,16 +28,20 @@ export async function createRelayActuator(wot: WoTLike) {
     const next = Boolean(v);
     const changed = next !== state.isOn;
     state.isOn = next;
+    await safeWrite(thing, "isOn", state.isOn);
     if (changed) thing.emitEvent("stateChanged", state.isOn);
   });
 
   thing.setPropertyWriteHandler("mode", async (v: unknown) => {
     state.mode = v === "manual" ? "manual" : "auto";
+    await safeWrite(thing, "mode", state.mode);
   });
 
-  const setRelay = (v: boolean) => {
-    const changed = v !== state.isOn;
-    state.isOn = v;
+  const setRelay = async (v: boolean) => {
+    const next = Boolean(v);
+    const changed = next !== state.isOn;
+    state.isOn = next;
+    await safeWrite(thing, "isOn", state.isOn);
     if (changed) thing.emitEvent("stateChanged", state.isOn);
     return true;
   };
@@ -47,13 +51,20 @@ export async function createRelayActuator(wot: WoTLike) {
   thing.setActionHandler("toggle", async () => setRelay(!state.isOn));
 
   thing.setActionHandler("reset", async () => {
-    state.status = "online";
+    await setStatus("online");
     return true;
   });
 
-  const setStatus = (v: RelayState["status"]) => {
+  const setStatus = async (v: RelayState["status"]) => {
     state.status = v;
+    await safeWrite(thing, "status", state.status);
   };
 
   return { thing, state, setRelay, setStatus };
+}
+
+async function safeWrite(thing: any, name: string, value: unknown) {
+  try {
+    await thing.writeProperty(name, value);
+  } catch {}
 }
