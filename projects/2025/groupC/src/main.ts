@@ -6,6 +6,7 @@ import { createWindowSensor } from "./things/windowSensor.js";
 import { createLightSensor } from "./things/lightSensor.js";
 import { createTempHumiditySensor } from "./things/tempHumiditySensor.js";
 import { createRelayActuator } from "./things/relayActuator.js";
+import { startRoomOrchestrator } from "./orchestrators/roomOrchestrator.js";
 
 const { HttpServer } = httpBinding;
 
@@ -26,6 +27,21 @@ async function main() {
   await light.thing.expose();
   await th.thing.expose();
   await relay.thing.expose();
+
+  const stopOrch = startRoomOrchestrator({ presence, windowS, light, th, relay });
+
+  setInterval(() => {
+  console.log(
+    "SIM",
+    "presence=", presence.state.presence,
+    "window=", windowS.state.isOpen,
+    "lux=", Math.round(light.state.illuminanceLux),
+    "t=", th.state.temperature.toFixed(1),
+    "h=", th.state.humidityPct.toFixed(1),
+    "relay=", relay.state.isOn,
+    "mode=", relay.state.mode
+  );
+}, 2000);
 
   console.log("WoT API: http://localhost:8080");
 
