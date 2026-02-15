@@ -1,0 +1,83 @@
+{
+  "@context": [
+    "https://www.w3.org/2022/wot/td/v1.1",
+    {
+      "modv": "http://www.modbus.org/specs.php"
+    }
+  ],
+  "title": "FilterPumpModbus",
+  "description": "Modbus TCP device descriptor for aquarium filter pump. Communicates via Modbus registers.",
+  "properties": {
+    "pumpSpeed": {
+      "type": "integer",
+      "description": "Pump speed from Modbus register 0",
+      "minimum": 0,
+      "maximum": 100,
+      "forms": [
+        {
+          "href": "modbus+tcp://127.0.0.1:502/1/0?quantity=1",
+          "contentType": "application/octet-stream;length=2;byteSeq=BIG_ENDIAN",
+          "modv:entity": "HoldingRegister"
+        }
+      ]
+    },
+    "filterStatus": {
+      "type": "integer",
+      "description": "Filter status from Modbus register 1 (0=idle, 1=running, 2=cleaning, 3=error)",
+      "minimum": 0,
+      "maximum": 3,
+      "forms": [
+        {
+          "href": "modbus+tcp://127.0.0.1:502/1/1?quantity=1",
+          "contentType": "application/octet-stream;length=2;byteSeq=BIG_ENDIAN",
+          "modv:entity": "HoldingRegister"
+        }
+      ]
+    },
+    "filterHealth": {
+      "type": "integer",
+      "description": "Filter health from Modbus register 2",
+      "minimum": 0,
+      "maximum": 100,
+      "forms": [
+        {
+          "href": "modbus+tcp://127.0.0.1:502/1/2?quantity=1",
+          "contentType": "application/octet-stream;length=2;byteSeq=BIG_ENDIAN",
+          "modv:entity": "HoldingRegister"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "writePumpSpeed": {
+      "description": "Write pump speed to Modbus register 0",
+      "input": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "forms": [
+        {
+          "href": "modbus+tcp://127.0.0.1:502/1/0?quantity=1",
+          "contentType": "application/octet-stream;length=2;byteSeq=BIG_ENDIAN",
+          "op": ["invokeaction", "writeproperty"],
+          "modv:entity": "HoldingRegister"
+        }
+      ]
+    },
+    "triggerCleaning": {
+      "description": "Write 1 to Modbus register 3 to trigger cleaning cycle",
+      "input": {
+        "type": "integer"
+      },
+      "forms": [
+        {
+          "href": "modbus+tcp://127.0.0.1:502/1/3?quantity=1",
+          "contentType": "application/octet-stream;length=2;byteSeq=BIG_ENDIAN",
+          "op": ["invokeaction", "writeproperty"],
+          "modv:entity": "HoldingRegister"
+        }
+      ]
+    }
+  }
+}
