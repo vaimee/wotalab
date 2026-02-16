@@ -22,6 +22,11 @@ export class HumiditySensorThing{
         
         this.thing = await wot.produce(tm);
         
+        // Imposta i Read Handler
+        this.thing.setPropertyReadHandler("soilMoisture", async () => this.soilMoisture);
+        this.thing.setPropertyReadHandler("temperature", async () => this.temperature);
+        this.thing.setPropertyReadHandler("status", async () => this.status);
+        
         await this.thing.expose();
 
         console.log(`[OK] Sensore Umidità esposto su: http://localhost:${this.port}/humidity-sensor`);
