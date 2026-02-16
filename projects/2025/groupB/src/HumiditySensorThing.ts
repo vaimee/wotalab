@@ -1,5 +1,6 @@
 ﻿import {Servient} from "@node-wot/core";
 import * as fs from "fs/promises";
+import {clearInterval} from "node:timers";
 
 export class HumiditySensorThing{
     private thing: WoT.ExposedThing | null = null;
@@ -73,5 +74,23 @@ export class HumiditySensorThing{
             
             console.log(`[SENSOR] Umidità terreno: ${this.soilMoisture.toFixed(1)}% | Temperatura: ${this.temperature.toFixed(1)}°C`)
         }, 3000)
+    }
+    
+    stopSimulation(): void {
+        if (this.simulationInterval) {
+            clearInterval(this.simulationInterval);
+            this.simulationInterval = null;
+        }
+    }
+    
+    // Notifica il sensore dello stato della pompa per simulazione realistica
+    setPumpStatus(isActive: boolean): void{
+        this.isPumpActive = isActive;
+        console.log(`[SENSOR] Sensore umidita: pompa ${isActive ? 'ATTIVA' : 'SPENTA'} - comportamento aggiornato}`);
+    }
+    
+    async destroy(): Promise<void> {
+        this.stopSimulation();
+        await this.thing?.destroy();
     }
 }
