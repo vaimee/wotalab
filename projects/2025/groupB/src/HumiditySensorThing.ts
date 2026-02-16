@@ -52,8 +52,25 @@ export class HumiditySensorThing{
             const tempVariation = (Math.random() - 0.5) * 0.5;
             this.temperature = Math.max(0, Math.min(40, this.temperature + tempVariation))
 
-            // Le proprietà si aggiornano automaticamente per chi legge, 
-            // ma qui aggiungiamo solo il log per noi
+            // Le proprietà si aggiornano automaticamente per chi legge
+            if (this.soilMoisture < this.drySoilThreshold){
+                await this.thing?.emitEvent("drySoil",{
+                    soilMoisture: this.soilMoisture,
+                    threshold: this.drySoilThreshold,
+                    timestamp: new Date().toISOString(),
+                });
+                console.log(`[EVENT] Terreno secco (${this.soilMoisture.toFixed(1)}%)`);
+            }
+            
+            if (this.soilMoisture > this.wetSoilThreshold){
+                await this.thing?.emitEvent("wetSoil", {
+                    soilMoisture: this.soilMoisture,
+                    threshold: this.wetSoilThreshold,
+                    timestamp: new Date().toISOString(),
+                })
+                console.log(`[EVENT] Terreno umido (${this.soilMoisture.toFixed(1)}%)`);
+            }
+            
             console.log(`[SENSOR] Umidità terreno: ${this.soilMoisture.toFixed(1)}% | Temperatura: ${this.temperature.toFixed(1)}°C`)
         }, 3000)
     }
