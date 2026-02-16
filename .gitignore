@@ -27,3 +27,4 @@ yarn-error.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+/projects/2025/groupB/package-lock.json
