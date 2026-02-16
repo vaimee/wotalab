@@ -31,4 +31,30 @@ export class HumiditySensorThing{
 
         console.log(`[OK] Sensore Umidità esposto su: http://localhost:${this.port}/humidity-sensor`);
     }
+    
+    startSimulation(): void{
+        this.simulationInterval = setInterval(async () => {
+            // Simulazione realistica dell'umidità
+            let variation;
+            if (this.isPumpActive){
+                // Durante l'irrigazione: umidità aumenta
+                variation = 2 + Math.random()*2;
+            } else {
+                // Senza irrigazione: diminuisce (evaporazione)
+                // Diminuzione piu veloce con temperature alte
+                const evaporationRate = 0.3 + (this.temperature/100);
+                variation = -(evaporationRate + Math.random() * 0.2);
+            }
+            // Aggiorniamo umidità bloccandola tra 0 e 100
+            this.soilMoisture = Math.max(0, Math.min(100, this.soilMoisture + variation));
+            
+            // Temperatura varia leggermente
+            const tempVariation = (Math.random() - 0.5) * 0.5;
+            this.temperature = Math.max(0, Math.min(40, this.temperature + tempVariation))
+
+            // Le proprietà si aggiornano automaticamente per chi legge, 
+            // ma qui aggiungiamo solo il log per noi
+            console.log(`[SENSOR] Umidità terreno: ${this.soilMoisture.toFixed(1)}% | Temperatura: ${this.temperature.toFixed(1)}°C`)
+        }, 3000)
+    }
 }
