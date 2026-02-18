@@ -1,6 +1,7 @@
 import { Servient } from "@node-wot/core";
 import { HttpServer } from "@node-wot/binding-http";
 import { IrrigationPumpThing } from "./IrrigationPumpThing";
+import { LightSensorThing } from "./LightSensorThing";
 
 async function main() {
   const servient = new Servient();
@@ -8,13 +9,21 @@ async function main() {
 
   const pumpThing = new IrrigationPumpThing(servient, 8083);
   await pumpThing.init();
+  
+  const lightSensor = new LightSensorThing(servient, 8080);
+  await lightSensor.init();
 
   console.log("[MAIN] Sistema di irrigazione avviato");
   console.log("[MAIN] Premi CTRL+C per terminare");
 
+  async function cleanup() {
+	await lightSensor.destroy();
+	await pumpThing.destroy();
+	}
+
   process.on("SIGINT", async () => {
     console.log("\n[MAIN] Arresto in corso...");
-    await pumpThing.destroy();
+    await cleanup();
     process.exit(0);
   });
 }
