@@ -50,6 +50,8 @@ Ogni Thing espone una Thing Description (TD) che definisce:
   - setTargetTemperature(x): è l’azione che permette di modificare targetTemperature
 
   - turnOn(), turnOff() : accende e spegne il riscaldamento
+ 
+  - Il riscaldamento parte quando un sensore rileva -0.1 rispetto alla temperatura desiderata (es: 19.9°C se Temp. desiderata = 20°C), mentre        per lo spegnimento c'è un margine di 0.3 (es. si spegne se Temp. desiderata = 20 °C e il termostato arriva a 20.3 °C).
 
 - **Events**
 
