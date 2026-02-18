@@ -1,7 +1,7 @@
 import { Servient } from "@node-wot/core";
 import { HttpClientFactory } from "@node-wot/binding-http";
 
-const servient = new Servient();
+const servient = new Servient();//123
 servient.addClientFactory(new HttpClientFactory());
 
 const rooms = [
