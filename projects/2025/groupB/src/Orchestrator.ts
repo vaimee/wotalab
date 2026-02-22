@@ -165,6 +165,13 @@ export class IrrigationOrchestrator {
       const moistureDeficit = this.maxSoilMoisture - soilMoisture;
       const duration = Math.min(Math.max(moistureDeficit * 2, 10), 60);
 
+      console.log(`\n[START] Avvio irrigazione per ${duration} secondi...`);
+      
+      // Notifica il sensore che la pompa sta per attivarsi
+      if (this.humiditySensorThing) {
+        this.humiditySensorThing.setPumpStatus(true);
+      }
+      
       await this.pump?.invokeAction("startPump", {
         duration: duration,
         flowRate: 15,
@@ -172,6 +179,17 @@ export class IrrigationOrchestrator {
     } catch (error) {
       console.error("[ERROR] Errore durante l'avvio dell'irrigazione:", error);
     }
+  }
+  
+  async stopIrrigation(): Promise<void> {
+    console.log("\n[STOP] Interruzione irrigazione manuale...");
+
+    // Notifica il sensore che la pompa si sta fermando
+    if (this.humiditySensorThing) {
+      this.humiditySensorThing.setPumpStatus(false);
+    }
+
+    await this.pump?.invokeAction("stopPump");
   }
 
   startMonitoring(intervalSeconds: number = 5): void {
