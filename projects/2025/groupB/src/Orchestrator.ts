@@ -12,6 +12,7 @@ export class IrrigationOrchestrator {
   private maxSoilMoisture: number = 70;
   private minLightForIrrigation: number = 3000;
   private checkInterval: NodeJS.Timeout | null = null;
+  private isAutoMode: boolean = true;
 
   constructor(private servient: Servient) {
     // Aggiungi il client HTTP per consumare altri Thing
@@ -87,6 +88,10 @@ export class IrrigationOrchestrator {
       console.log(`[${now}] Umidità: ${soilMoisture.toFixed(1)}% | Luce: ${luminosity.toFixed(0)} lux | Pompa: ${isPumping ? 'ATTIVA' : 'Spenta'}`);
 
       // LOGICA DI IRRIGAZIONE
+      if (!this.isAutoMode) {
+        console.log("   [MODE] Modalità manuale - automazione disabilitata")
+        return
+      }
       
       // Se la pompa è attiva e l'umidità ha raggiunto il massimo -> FERMA
       if (isPumping && soilMoisture >= this.maxSoilMoisture) {
@@ -141,6 +146,11 @@ export class IrrigationOrchestrator {
       this.checkInterval = null;
       console.log("[ORCHESTRATOR] Monitoraggio fermato");
     }
+  }
+
+  toggleAutoMode(): void {
+    this.isAutoMode = !this.isAutoMode;
+    console.log(`\n[ORCHESTRATOR] Modalità Automatica: ${this.isAutoMode ? 'ATTIVA' : 'DISATTIVATA'}`);
   }
 
   async destroy(): Promise<void> {
