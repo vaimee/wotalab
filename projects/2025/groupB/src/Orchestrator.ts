@@ -6,6 +6,7 @@ export class IrrigationOrchestrator {
   private lightSensor: WoT.ConsumedThing | null = null;
   private humiditySensor: WoT.ConsumedThing | null = null;
   private pump: WoT.ConsumedThing | null = null;
+  private humiditySensorThing: any = null; // Riferimento al sensore fisico per simulazione
   
   // Parametri del sistema di irrigazione
   private minSoilMoisture: number = 30;
@@ -13,6 +14,15 @@ export class IrrigationOrchestrator {
   private minLightForIrrigation: number = 3000;
   private checkInterval: NodeJS.Timeout | null = null;
   private isAutoMode: boolean = true;
+
+  private dataHistory: Array<{
+    timestamp: number;
+    soilMoisture: number;
+    temperature: number;
+    luminosity: number;
+    isPumping: boolean;
+  }> = [];
+  private maxHistorySize: number = 100; // Mantiene gli ultimi 100 punti
 
   constructor(private servient: Servient) {
     // Aggiungi il client HTTP per consumare altri Thing
@@ -83,6 +93,17 @@ export class IrrigationOrchestrator {
       const isPumpingData = await this.pump.readProperty("isPumping");
       const isPumping = await isPumpingData?.value() as boolean;
 
+      const temperatureData = await this.humiditySensor?.readProperty("temperature");
+      const temperature = await temperatureData?.value() as number;
+
+      this.addToHistory({
+        timestamp: Date.now(),
+        soilMoisture,
+        temperature,
+        luminosity,
+        isPumping
+      });
+
       // Log stato attuale
       const now = new Date().toLocaleTimeString('it-IT');
       console.log(`[${now}] Umidità: ${soilMoisture.toFixed(1)}% | Luce: ${luminosity.toFixed(0)} lux | Pompa: ${isPumping ? 'ATTIVA' : 'Spenta'}`);
@@ -96,6 +117,12 @@ export class IrrigationOrchestrator {
       // Se la pompa è attiva e l'umidità ha raggiunto il massimo -> FERMA
       if (isPumping && soilMoisture >= this.maxSoilMoisture) {
         console.log(`  [STOP] Umidità massima raggiunta (${this.maxSoilMoisture}%)`);
+
+        // Notifica il sensore che la pompa si sta fermando
+        if (this.humiditySensorThing) {
+          this.humiditySensorThing.setPumpStatus(false);
+        }
+        
         await this.pump.invokeAction("stopPump");
         return;
       }
@@ -111,6 +138,21 @@ export class IrrigationOrchestrator {
       }
     } catch (error) {
       // Errore silenzioso durante il caricamento iniziale
+    }
+  }
+
+  private addToHistory(dataPoint: {
+    timestamp: number;
+    soilMoisture: number;
+    temperature: number;
+    luminosity: number;
+    isPumping: boolean;
+  }): void {
+    this.dataHistory.push(dataPoint);
+
+    // Mantieni solo gli ultimi maxHistorySize punti
+    if (this.dataHistory.length > this.maxHistorySize) {
+      this.dataHistory.shift();
     }
   }
 
