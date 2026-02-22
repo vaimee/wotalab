@@ -180,6 +180,20 @@ export class IrrigationOrchestrator {
       console.error("[ERROR] Errore durante l'avvio dell'irrigazione:", error);
     }
   }
+
+  async manualIrrigation(duration: number, flowRate: number = 15): Promise<void> {
+    console.log(`\n[MANUAL] Irrigazione manuale per ${duration} secondi...`);
+
+    // Notifica il sensore che la pompa sta per attivarsi
+    if (this.humiditySensorThing) {
+      this.humiditySensorThing.setPumpStatus(true);
+    }
+
+    await this.pump?.invokeAction("startPump", {
+      duration: duration,
+      flowRate: flowRate,
+    });
+  }
   
   async stopIrrigation(): Promise<void> {
     console.log("\n[STOP] Interruzione irrigazione manuale...");
