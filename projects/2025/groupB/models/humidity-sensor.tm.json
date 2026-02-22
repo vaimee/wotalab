@@ -1,4 +1,4 @@
-﻿{
+{
   "@context": [
     "https://www.w3.org/2019/wot/td/v1",
     {
@@ -85,7 +85,7 @@
       },
       "forms": [
         {
-          "href": "http://localhost:80/humidity-sensor/events/drySoil"
+          "href": "http://localhost:8082/humidity-sensor/events/drySoil"
         }
       ]
     },
