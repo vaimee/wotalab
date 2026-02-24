@@ -8,29 +8,47 @@ servient.start().then(async (WoT) => {
     const thing = await WoT.produce({
         title: "HeatingSystem",
         description: "Sistema di riscaldamento",
+        support: "https://github.com/eclipse-thingweb/node-wot/",
+        "@context": [
+            "https://www.w3.org/2022/wot/td/v1.1",
+            {
+                saref: "https://saref.etsi.org/core/",
+                s4bldg: "https://saref.etsi.org/saref4bldg/",
+                qudt: "http://qudt.org/schema/qudt/",
+                unit: "http://qudt.org/vocab/unit/",
+                schema: "https://schema.org/"
+            }
+        ],
+        "@type": ["s4bldg:Boiler", "saref:Device"],
         properties: {
             targetTemperature: {
                 type: "number",
                 description: "Temperatura desiderata",
-                readOnly: false
+                readOnly: false,
+                "@type": ["s4bldg:TemperatureSetpoint", "qudt:QuantityValue"],
+                unit: "unit:DEG_C"
             },
             isOn: {
                 type: "boolean",
                 description: "Stato riscaldamento (acceso/spento)",
                 readOnly: true,
-                observable: true
+                observable: true,
+                "@type": "saref:OnOffState"
             }
         },
         actions: {
             setTargetTemperature: {
                 description: "Imposta temperatura desiderata",
-                input: { type: "number" }
+                input: { type: "number" },
+                "@type": "schema:ControlAction"
             },
             turnOn: {
-                description: "Accende il riscaldamento"
+                description: "Accende il riscaldamento",
+                "@type": "schema:ActivateAction"
             },
             turnOff: {
-                description: "Spegne il riscaldamento"
+                description: "Spegne il riscaldamento",
+                "@type": "schema:DeactivateAction"
             }
         }
     });

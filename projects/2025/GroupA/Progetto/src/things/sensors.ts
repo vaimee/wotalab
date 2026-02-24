@@ -20,33 +20,52 @@ servient.start().then(async (WoT) => {
         const thing = await WoT.produce({
             title: `Sensor${room.name}`,
             description: `Sensore di temperatura ${room.name}`,
+            support: "https://github.com/eclipse-thingweb/node-wot/",
+            "@context": [
+                "https://www.w3.org/2022/wot/td/v1.1",
+                {
+                    saref: "https://saref.etsi.org/core/",
+                    s4bldg: "https://saref.etsi.org/saref4bldg/",
+                    qudt: "http://qudt.org/schema/qudt/",
+                    unit: "http://qudt.org/vocab/unit/",
+                    schema: "https://schema.org/"
+                }
+            ],
+            "@type": ["saref:TemperatureSensor", "saref:Device"],
             properties: {
                 temperature: {
                     type: "number",
                     description: "Temperatura attuale della stanza",
                     readOnly: true,
-                    observable: true
+                    observable: true,
+                    "@type": ["saref:Temperature", "qudt:QuantityValue"],
+                    unit: "unit:DEG_C"
                 },
                 targetTemperature: {
                     type: "number",
                     description: "Temperatura desiderata",
-                    readOnly: false
+                    readOnly: false,
+                    "@type": ["s4bldg:TemperatureSetpoint", "qudt:QuantityValue"],
+                    unit: "unit:DEG_C"
                 },
                 isValveOpen: {
                     type: "boolean",
                     description: "Stato termostato (valvola aperta/chiusa)",
                     readOnly: true,
-                    observable: true
+                    observable: true,
+                    "@type": "saref:OnOffState"
                 }
             },
             actions: {
                 setHeatingState: {
                     description: "Imposta stato riscaldamento (per simulazione)",
-                    input: { type: "boolean" }
+                    input: { type: "boolean" },
+                    "@type": "schema:ControlAction"
                 },
                 setTargetTemperature: {
                     description: "Imposta temperatura desiderata",
-                    input: { type: "number" }
+                    input: { type: "number" },
+                    "@type": "schema:ControlAction"
                 }
             }
         });

@@ -45,8 +45,8 @@ servient.start().then(async (WoT) => {
             console.log("→ Riscaldamento ACCESO");
         }
         else if (isOn && !needsHeating) {
-            // Il riscaldamento è acceso ma nessuna stanza è sotto target - 0.1
-            // Controlla se almeno una valvola è ancora aperta
+            //Il riscaldamento è acceso ma nessuna stanza è sotto target - 0.1
+            //Controlla se almeno una valvola è ancora aperta
             let anyValveOpen = false;
             for (const { sensor } of sensors) {
                 const valveOutput = await sensor.readProperty("isValveOpen");
@@ -56,7 +56,7 @@ servient.start().then(async (WoT) => {
                     break;
                 }
             }
-            // Spegni solo se NESSUNA valvola è aperta
+            //Spegne il riscaldamento solo se nessuna valvola è aperta
             if (!anyValveOpen) {
                 await heater.invokeAction("turnOff");
                 for (const { sensor } of sensors) {
