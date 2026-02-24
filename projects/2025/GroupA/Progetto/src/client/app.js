@@ -73,7 +73,7 @@ async function updateDashboard() {
     }
 }
 
-//limita input a un solo decimale.
+//limita input a un solo decimale
 document.querySelectorAll('input[type="number"]').forEach(input => {
     input.addEventListener('input', function(e) {
         const value = e.target.value;
