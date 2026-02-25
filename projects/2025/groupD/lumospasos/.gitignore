@@ -1,0 +1,21 @@
+node_modules/
+dist/
+
+# Generated Thing Descriptions
+*.td.json
+
+# Webcam captures
+sensor_capture.*
+
+# Logs
+orchestrator.log
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env

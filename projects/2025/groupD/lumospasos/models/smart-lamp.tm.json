@@ -1,0 +1,34 @@
+{
+    "@context": ["https://www.w3.org/2022/wot/td/v1.1"],
+    "title": "smart-lamp",
+    "description": "A smart lamp actuator that exposes brightness and color temperature controls.",
+    "properties": {
+        "brightness": {
+            "title": "Brightness",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 255,
+            "readOnly": false,
+            "observable": true
+        },
+        "colorTemperature": {
+            "title": "Color Temperature",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 255,
+            "readOnly": false,
+            "observable": true
+        }
+    },
+    "actions": {
+        "turnOff": {
+            "title": "Turn Off",
+            "description": "Turn off the lamp (set brightness to 0)"
+        },
+        "turnOn": {
+            "title": "Turn On",
+            "description": "Turn on the lamp (restore previous brightness or max)"
+        }
+    },
+    "events": {}
+}

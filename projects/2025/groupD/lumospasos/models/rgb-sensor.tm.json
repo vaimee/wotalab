@@ -1,0 +1,20 @@
+{
+    "@context": ["https://www.w3.org/2022/wot/td/v1.1"],
+    "title": "rgb-sensor",
+    "description": "Sensor that detects the ambient room color (RGB) via webcam capture.",
+    "properties": {
+        "color": {
+            "title": "Ambient Color",
+            "type": "object",
+            "properties": {
+                "r": { "type": "number", "minimum": 0, "maximum": 255 },
+                "g": { "type": "number", "minimum": 0, "maximum": 255 },
+                "b": { "type": "number", "minimum": 0, "maximum": 255 }
+            },
+            "readOnly": true,
+            "observable": true
+        }
+    },
+    "actions": {},
+    "events": {}
+}

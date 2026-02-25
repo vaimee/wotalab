@@ -1,0 +1,42 @@
+{
+  "name": "lumopaso",
+  "version": "1.0.0",
+  "description": "Ambient lighting management system using Web of Things (WoT) - automatic color compensation via webcam",
+  "main": "./build/main.js",
+  "scripts": {
+    "start": "node ./build/main",
+    "build": "tsc",
+    "dev:build": "tsc -w",
+    "dev:run": "nodemon build/main",
+    "start:dev": "concurrently npm:dev:*",
+    "start:build": "tsc && node ./build/main",
+    "start:broker": "node start-broker.js"
+  },
+  "keywords": [
+    "wot",
+    "web-of-things",
+    "ambient-lighting",
+    "mqtt",
+    "iot"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "@node-wot/binding-http": "^0.8.10",
+    "@node-wot/binding-mqtt": "^0.8.10",
+    "@node-wot/core": "^0.8.10",
+    "aedes": "^0.51.3",
+    "express": "^4.21.2",
+    "jimp": "^1.6.0",
+    "mqtt": "^5.10.3",
+    "node-webcam": "^0.8.2",
+    "wot-typescript-definitions": "^0.8.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

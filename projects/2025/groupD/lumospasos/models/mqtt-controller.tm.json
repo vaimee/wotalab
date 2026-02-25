@@ -1,0 +1,19 @@
+{
+    "@context": ["https://www.w3.org/2022/wot/td/v1.1"],
+    "title": "mqtt-controller",
+    "description": "Controller that receives commands via WoT and publishes them as raw MQTT messages.",
+    "actions": {
+        "publishCommand": {
+            "title": "Publish MQTT Command",
+            "description": "Publish a payload to the specified MQTT topic",
+            "input": {
+                "type": "object",
+                "properties": {
+                    "topic": { "type": "string" },
+                    "payload": { "type": "string" }
+                }
+            }
+        }
+    },
+    "events": {}
+}

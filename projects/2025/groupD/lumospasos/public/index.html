@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumo Pasos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-box {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4 text-primary">Lumo Pasos</h1>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">System Status</div>
+                    <div class="card-body">
+                        <p><strong>Mode:</strong> <span id="statusMode"
+                                class="badge bg-info text-dark">fetching...</span></p>
+                        <hr>
+                        <p><strong>Room:</strong>
+                            <span id="roomColorBox" class="color-box"></span>
+                            (R:<span id="statusRoomR">0</span>, G:<span id="statusRoomG">0</span>, B:<span
+                                id="statusRoomB">0</span>)
+                        </p>
+                        <p><strong>Lamp:</strong>
+                            <span id="lampColorBox" class="color-box"></span>
+                            (R:<span id="statusLampR">0</span>, G:<span id="statusLampG">0</span>, B:<span
+                                id="statusLampB">0</span>)
+                        </p>
+                        <p><strong>Mixed:</strong>
+                            <span id="mixedColorBox" class="color-box"></span>
+                            (R:<span id="statusMixedR">0</span>, G:<span id="statusMixedG">0</span>, B:<span
+                                id="statusMixedB">0</span>)
+                        </p>
+                        <p><strong>Lamp Brightness:</strong> <span id="statusLampBrightness">0</span>/255</p>
+                        <p><strong>Lamp Temperature:</strong> <span id="statusLampTemp">0</span>/255</p>
+                        <hr>
+                        <button class="btn btn-outline-primary w-100" id="btnToggleMode">Toggle Mode</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+
+                <!-- Manual Control -->
+                <div class="card" id="manualCard">
+                    <div class="card-header bg-primary text-white">Manual Control</div>
+                    <div class="card-body">
+                        <label class="form-label">Brightness: <span id="labelBrightness">255</span></label>
+                        <input type="range" class="form-range" id="sliderBrightness" min="0" max="255" value="255">
+
+                        <label class="form-label mt-3">Color Temperature: <span id="labelTemperature">127</span></label>
+                        <input type="range" class="form-range" id="sliderTemperature" min="0" max="255" value="127">
+
+                        <button class="btn btn-primary mt-4 w-100" id="btnApplyManual">Apply Settings</button>
+                    </div>
+                </div>
+
+                <!-- Automatic Control -->
+                <div class="card d-none" id="autoCard">
+                    <div class="card-header bg-success text-white">Automatic Control</div>
+                    <div class="card-body">
+                        <p>Set Target Ambient Color:</p>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-danger text-white">R</span>
+                            <input type="number" class="form-control" id="targetR" min="0" max="255" value="255">
+                        </div>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-success text-white">G</span>
+                            <input type="number" class="form-control" id="targetG" min="0" max="255" value="255">
+                        </div>
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-primary text-white">B</span>
+                            <input type="number" class="form-control" id="targetB" min="0" max="255" value="255">
+                        </div>
+
+                        <button class="btn btn-success w-100" id="btnApplyAuto">Set Target Color</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const statusMode = document.getElementById('statusMode');
+        const roomColorBox = document.getElementById('roomColorBox');
+        const statusRoomR = document.getElementById('statusRoomR');
+        const statusRoomG = document.getElementById('statusRoomG');
+        const statusRoomB = document.getElementById('statusRoomB');
+
+        const lampColorBox = document.getElementById('lampColorBox');
+        const statusLampR = document.getElementById('statusLampR');
+        const statusLampG = document.getElementById('statusLampG');
+        const statusLampB = document.getElementById('statusLampB');
+
+        const mixedColorBox = document.getElementById('mixedColorBox');
+        const statusMixedR = document.getElementById('statusMixedR');
+        const statusMixedG = document.getElementById('statusMixedG');
+        const statusMixedB = document.getElementById('statusMixedB');
+        const statusLampBrightness = document.getElementById('statusLampBrightness');
+        const statusLampTemp = document.getElementById('statusLampTemp');
+
+        const sliderBrightness = document.getElementById('sliderBrightness');
+        const sliderTemperature = document.getElementById('sliderTemperature');
+        const labelBrightness = document.getElementById('labelBrightness');
+        const labelTemperature = document.getElementById('labelTemperature');
+
+        const targetR = document.getElementById('targetR');
+        const targetG = document.getElementById('targetG');
+        const targetB = document.getElementById('targetB');
+
+        const btnToggleMode = document.getElementById('btnToggleMode');
+        const manualCard = document.getElementById('manualCard');
+        const autoCard = document.getElementById('autoCard');
+
+        let currentMode = 'manual';
+
+        sliderBrightness.addEventListener('input', () => {
+            labelBrightness.innerText = sliderBrightness.value;
+        });
+        sliderTemperature.addEventListener('input', () => {
+            labelTemperature.innerText = sliderTemperature.value;
+        });
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/state');
+                const data = await res.json();
+
+                currentMode = data.mode;
+                statusMode.innerText = data.mode.toUpperCase();
+                statusMode.className = data.mode === 'manual' ? 'badge bg-primary' : 'badge bg-success';
+
+                statusRoomR.innerText = data.roomColor.r;
+                statusRoomG.innerText = data.roomColor.g;
+                statusRoomB.innerText = data.roomColor.b;
+                roomColorBox.style.backgroundColor = `rgb(${data.roomColor.r}, ${data.roomColor.g}, ${data.roomColor.b})`;
+
+                statusLampR.innerText = data.computedLampColor.r;
+                statusLampG.innerText = data.computedLampColor.g;
+                statusLampB.innerText = data.computedLampColor.b;
+                lampColorBox.style.backgroundColor = `rgb(${data.computedLampColor.r}, ${data.computedLampColor.g}, ${data.computedLampColor.b})`;
+
+                statusMixedR.innerText = data.computedMixedColor.r;
+                statusMixedG.innerText = data.computedMixedColor.g;
+                statusMixedB.innerText = data.computedMixedColor.b;
+                mixedColorBox.style.backgroundColor = `rgb(${data.computedMixedColor.r}, ${data.computedMixedColor.g}, ${data.computedMixedColor.b})`;
+
+                statusLampBrightness.innerText = data.lampBrightness;
+                statusLampTemp.innerText = data.lampTemp;
+
+                if (currentMode === 'manual') {
+                    manualCard.classList.remove('d-none');
+                    autoCard.classList.add('d-none');
+                } else {
+                    manualCard.classList.add('d-none');
+                    autoCard.classList.remove('d-none');
+                }
+            } catch (err) {
+                console.error('Status fetch error:', err);
+            }
+        }
+
+        btnToggleMode.addEventListener('click', async () => {
+            const newMode = currentMode === 'manual' ? 'automatic' : 'manual';
+            await fetch('/api/mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: newMode })
+            });
+            fetchStatus();
+        });
+
+        document.getElementById('btnApplyManual').addEventListener('click', async () => {
+            await fetch('/api/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brightness: parseInt(sliderBrightness.value),
+                    temperature: parseInt(sliderTemperature.value)
+                })
+            });
+            fetchStatus();
+        });
+
+        document.getElementById('btnApplyAuto').addEventListener('click', async () => {
+            await fetch('/api/automatic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    r: parseInt(targetR.value),
+                    g: parseInt(targetG.value),
+                    b: parseInt(targetB.value)
+                })
+            });
+            fetchStatus();
+        });
+
+        setInterval(fetchStatus, 1000);
+        fetchStatus();
+    </script>
+</body>
+
+</html>
