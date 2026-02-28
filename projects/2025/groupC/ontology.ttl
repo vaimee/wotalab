@@ -1,0 +1,50 @@
+@prefix : <http://example.org/smart-room#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+<http://example.org/smart-room> rdf:type owl:Ontology ;
+    dcterms:title "Smart Room Ontology" ;
+    dcterms:description "A local ontology for the Smart Room project, extending SAREF and SOSA." ;
+    owl:imports saref: , sosa: .
+
+#################################################################
+#    Classes
+#################################################################
+
+:SmartRoom rdf:type owl:Class ;
+    rdfs:subClassOf saref:BuildingObject ;
+    rdfs:label "Smart Room" ;
+    rdfs:comment "A room equipped with Web of Things devices for energy efficiency and comfort." .
+
+:Window rdf:type owl:Class ;
+    rdfs:subClassOf saref:FeatureOfInterest ;
+    rdfs:label "Window" .
+
+:Boiler rdf:type owl:Class ;
+    rdfs:subClassOf saref:Heater ;
+    rdfs:label "Boiler" .
+
+:RoomLight rdf:type owl:Class ;
+    rdfs:subClassOf saref:LightSwitch ;
+    rdfs:label "Room Light" .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+:hasDevice rdf:type owl:ObjectProperty ;
+    rdfs:domain :SmartRoom ;
+    rdfs:range saref:Device ;
+    rdfs:label "has device" .
+
+:isMonitoring rdf:type owl:ObjectProperty ;
+    rdfs:domain saref:Device ;
+    rdfs:range :SmartRoom ;
+    rdfs:label "is monitoring" .
+

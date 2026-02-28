@@ -20,26 +20,34 @@ async function main() {
   const windowS = await createWindowSensor(wot as any);
   const light = await createLightSensor(wot as any);
   const th = await createTempHumiditySensor(wot as any);
-  const relay = await createRelayActuator(wot as any);
+  const lightActuator = await createRelayActuator(wot as any, "light-actuator.tm.json");
+  const boilerActuator = await createRelayActuator(wot as any, "boiler-actuator.tm.json");
 
   await presence.thing.expose();
   await windowS.thing.expose();
   await light.thing.expose();
   await th.thing.expose();
-  await relay.thing.expose();
+  await lightActuator.thing.expose();
+  await boilerActuator.thing.expose();
 
-  const stopOrch = startRoomOrchestrator({ presence, windowS, light, th, relay });
+  const stopOrch = startRoomOrchestrator({ 
+    presence, 
+    windowS, 
+    light, 
+    th, 
+    lightActuator, 
+    boilerActuator 
+  });
 
   setInterval(() => {
   console.log(
     "SIM",
-    "presence=", presence.state.presence,
-    "window=", windowS.state.isOpen,
+    "pres=", presence.state.presence,
+    "win=", windowS.state.isOpen,
     "lux=", Math.round(light.state.illuminanceLux),
     "t=", th.state.temperature.toFixed(1),
-    "h=", th.state.humidityPct.toFixed(1),
-    "relay=", relay.state.isOn,
-    "mode=", relay.state.mode
+    "light=", lightActuator.state.isOn,
+    "boiler=", boilerActuator.state.isOn
   );
 }, 2000);
 

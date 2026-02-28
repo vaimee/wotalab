@@ -14,13 +14,16 @@ export type OrchestratorDeps = {
   windowS: WindowS;
   light: Light;
   th: TH;
-  relay: Relay;
+  lightActuator: Relay;
+  boilerActuator: Relay;
 };
 
 export type OrchestratorOptions = {
   intervalMs?: number;
   luxOnThreshold?: number;
   luxOffThreshold?: number;
+  tempOnThreshold?: number;
+  tempOffThreshold?: number;
 };
 
 export function startRoomOrchestrator(
@@ -30,40 +33,41 @@ export function startRoomOrchestrator(
   const intervalMs = opts.intervalMs ?? 1000;
   const luxOn = opts.luxOnThreshold ?? 200;
   const luxOff = opts.luxOffThreshold ?? 260;
+  const tempOn = opts.tempOnThreshold ?? 19;
+  const tempOff = opts.tempOffThreshold ?? 22;
 
   return every(intervalMs, async () => {
-    if (deps.relay.state.status !== "online") return;
-    if (deps.relay.state.mode !== "auto") return;
+    // --- LIGHT LOGIC ---
+    if (deps.lightActuator.state.status === "online" && deps.lightActuator.state.mode === "auto") {
+      const presenceOk = deps.presence.state.status === "online" && deps.presence.state.presence;
+      const lux = deps.light.state.status === "online" ? deps.light.state.illuminanceLux : 999999;
 
-    const presenceOk =
-      deps.presence.state.status === "online" && deps.presence.state.presence;
-
-    const windowOpen =
-      deps.windowS.state.status === "online" && deps.windowS.state.isOpen;
-
-    const lux =
-      deps.light.state.status === "online"
-        ? deps.light.state.illuminanceLux
-        : 999999;
-
-    if (!presenceOk) {
-      if (deps.relay.state.isOn) await deps.relay.setRelay(false);
-      return;
+      if (!presenceOk) {
+        if (deps.lightActuator.state.isOn) await deps.lightActuator.setRelay(false);
+      } else {
+        if (lux < luxOn && !deps.lightActuator.state.isOn) {
+          await deps.lightActuator.setRelay(true);
+        } else if (lux >= luxOff && deps.lightActuator.state.isOn) {
+          await deps.lightActuator.setRelay(false);
+        }
+      }
     }
 
-    if (windowOpen) {
-      if (deps.relay.state.isOn) await deps.relay.setRelay(false);
-      return;
-    }
+    // --- BOILER LOGIC ---
+    if (deps.boilerActuator.state.status === "online" && deps.boilerActuator.state.mode === "auto") {
+      const windowOpen = deps.windowS.state.status === "online" && deps.windowS.state.isOpen;
+      const temp = deps.th.state.status === "online" ? deps.th.state.temperature : 99;
 
-    if (lux < luxOn && !deps.relay.state.isOn) {
-      await deps.relay.setRelay(true);
-      return;
-    }
-
-    if (lux >= luxOff && deps.relay.state.isOn) {
-      await deps.relay.setRelay(false);
-      return;
+      if (windowOpen) {
+        // Stop heating if window is open to save energy
+        if (deps.boilerActuator.state.isOn) await deps.boilerActuator.setRelay(false);
+      } else {
+        if (temp < tempOn && !deps.boilerActuator.state.isOn) {
+          await deps.boilerActuator.setRelay(true);
+        } else if (temp >= tempOff && deps.boilerActuator.state.isOn) {
+          await deps.boilerActuator.setRelay(false);
+        }
+      }
     }
   });
 }

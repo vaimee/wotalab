@@ -1,5 +1,14 @@
 {
-  "@context": "https://www.w3.org/2019/wot/td/v1",
+  "@context": [
+    "https://www.w3.org/2019/wot/td/v1",
+    {
+      "saref": "https://saref.etsi.org/core/",
+      "sosa": "http://www.w3.org/ns/sosa/",
+      "qudt": "http://qudt.org/schema/qudt/",
+      "unit": "http://qudt.org/vocab/unit/"
+    }
+  ],
+  "@type": ["saref:TemperatureSensor", "saref:HumiditySensor", "sosa:Sensor"],
   "title": "tempHumiditySensor",
   "description": "Temperature and humidity sensor for a smart room",
 
@@ -12,20 +21,22 @@
 
   "properties": {
     "temperature": {
+      "@type": "saref:Temperature",
       "type": "number",
       "title": "Temperature",
       "description": "Air temperature in Celsius",
-      "unit": "degree celsius",
+      "unit": "unit:Deg_C",
       "minimum": -10,
       "maximum": 50,
       "readOnly": true,
       "observable": true
     },
     "humidityPct": {
+      "@type": "saref:Humidity",
       "type": "number",
       "title": "Relative Humidity",
       "description": "Relative humidity percentage",
-      "unit": "percent",
+      "unit": "unit:PERCENT",
       "minimum": 0,
       "maximum": 100,
       "readOnly": true,
@@ -56,3 +67,4 @@
     }
   }
 }
+

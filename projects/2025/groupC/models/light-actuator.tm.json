@@ -7,11 +7,11 @@
         }
     ],
     "@type": [
-        "saref:Actuator",
+        "saref:LightSwitch",
         "sosa:Actuator"
     ],
-    "title": "relayActuator",
-    "description": "Relay actuator for a smart room",
+    "title": "lightActuator",
+    "description": "Light actuator for room lighting",
     "securityDefinitions": {
         "nosec_sc": {
             "scheme": "nosec"
@@ -24,15 +24,15 @@
         "isOn": {
             "@type": "saref:OnOffState",
             "type": "boolean",
-            "title": "Relay State",
-            "description": "True if the relay is ON (device powered), false if OFF",
+            "title": "Light State",
+            "description": "True if the light is ON",
             "readOnly": false,
             "observable": true
         },
         "mode": {
             "type": "string",
             "title": "Control Mode",
-            "description": "Manual mode ignores automation; auto mode allows the reasoner to control the relay",
+            "description": "Manual mode ignores automation; auto mode allows the reasoner to control the light",
             "enum": [
                 "manual",
                 "auto"
@@ -56,31 +56,25 @@
     "actions": {
         "turnOn": {
             "@type": "saref:OnCommand",
-            "description": "Turn relay ON"
+            "description": "Turn light ON"
         },
         "turnOff": {
             "@type": "saref:OffCommand",
-            "description": "Turn relay OFF"
+            "description": "Turn light OFF"
         },
         "toggle": {
             "@type": "saref:ToggleCommand",
-            "description": "Toggle relay state"
+            "description": "Toggle light state"
         },
         "reset": {
-            "description": "Reset internal actuator state (e.g., clear last error)"
+            "description": "Reset internal actuator state"
         }
     },
     "events": {
         "stateChanged": {
-            "description": "Emitted when relay state changes",
+            "description": "Emitted when light state changes",
             "data": {
                 "type": "boolean"
-            }
-        },
-        "actuatorError": {
-            "description": "Emitted when the actuator detects an error",
-            "data": {
-                "type": "string"
             }
         }
     }

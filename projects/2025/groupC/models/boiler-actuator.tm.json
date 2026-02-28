@@ -7,11 +7,11 @@
         }
     ],
     "@type": [
-        "saref:Actuator",
+        "saref:Heater",
         "sosa:Actuator"
     ],
-    "title": "relayActuator",
-    "description": "Relay actuator for a smart room",
+    "title": "boilerActuator",
+    "description": "Boiler actuator for heating control",
     "securityDefinitions": {
         "nosec_sc": {
             "scheme": "nosec"
@@ -24,15 +24,15 @@
         "isOn": {
             "@type": "saref:OnOffState",
             "type": "boolean",
-            "title": "Relay State",
-            "description": "True if the relay is ON (device powered), false if OFF",
+            "title": "Boiler State",
+            "description": "True if the boiler is heating",
             "readOnly": false,
             "observable": true
         },
         "mode": {
             "type": "string",
             "title": "Control Mode",
-            "description": "Manual mode ignores automation; auto mode allows the reasoner to control the relay",
+            "description": "Manual mode ignores automation; auto mode allows the reasoner to control the boiler",
             "enum": [
                 "manual",
                 "auto"
@@ -56,31 +56,25 @@
     "actions": {
         "turnOn": {
             "@type": "saref:OnCommand",
-            "description": "Turn relay ON"
+            "description": "Turn boiler ON"
         },
         "turnOff": {
             "@type": "saref:OffCommand",
-            "description": "Turn relay OFF"
+            "description": "Turn boiler OFF"
         },
         "toggle": {
             "@type": "saref:ToggleCommand",
-            "description": "Toggle relay state"
+            "description": "Toggle boiler state"
         },
         "reset": {
-            "description": "Reset internal actuator state (e.g., clear last error)"
+            "description": "Reset internal actuator state"
         }
     },
     "events": {
         "stateChanged": {
-            "description": "Emitted when relay state changes",
+            "description": "Emitted when boiler state changes",
             "data": {
                 "type": "boolean"
-            }
-        },
-        "actuatorError": {
-            "description": "Emitted when the actuator detects an error",
-            "data": {
-                "type": "string"
             }
         }
     }
