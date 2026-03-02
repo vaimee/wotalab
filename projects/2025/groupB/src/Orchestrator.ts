@@ -29,6 +29,11 @@ export class IrrigationOrchestrator {
     this.servient.addClientFactory(new HttpClientFactory());
   }
 
+  // Collega il sensore per la simulazione fisica
+  setHumiditySensor(sensor: any): void {
+    this.humiditySensorThing = sensor;
+  }
+
   async init(): Promise<void> {
     try {
       console.log("\n[ORCHESTRATOR] Inizializzazione in corso...");
@@ -80,7 +85,7 @@ export class IrrigationOrchestrator {
     try {
       // Verifica che tutti i dispositivi siano connessi
       if (!this.humiditySensor || !this.lightSensor || !this.pump) {
-        return;
+        return; // Sala la valutazione se i dispositivi non sono pronti
       }
 
       // Lettura dei sensori
