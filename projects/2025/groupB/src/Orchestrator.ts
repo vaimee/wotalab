@@ -34,6 +34,76 @@ export class IrrigationOrchestrator {
     this.humiditySensorThing = sensor;
   }
 
+  // Permette di cambiare le soglie in corsa
+  updateConfiguration(config: {
+    minSoilMoisture?: number;
+    maxSoilMoisture?: number;
+    minLightForIrrigation?: number;
+    isAutoMode?: boolean;
+  }): void {
+    if (config.minSoilMoisture !== undefined) {
+      this.minSoilMoisture = config.minSoilMoisture;
+    }
+    if (config.maxSoilMoisture !== undefined) {
+      this.maxSoilMoisture = config.maxSoilMoisture;
+    }
+    if (config.minLightForIrrigation !== undefined) {
+      this.minLightForIrrigation = config.minLightForIrrigation;
+    }
+    if (config.isAutoMode !== undefined) {
+      this.isAutoMode = config.isAutoMode;
+    }
+
+    console.log(`\n[CONFIG] Configurazione aggiornata:`);
+    console.log(`   Umidità min: ${this.minSoilMoisture}%`);
+    console.log(`   Umidità max: ${this.maxSoilMoisture}%`);
+    console.log(`   Luce min: ${this.minLightForIrrigation} lux`);
+    console.log(`   Modalità auto: ${this.isAutoMode ? "ATTIVA" : "DISATTIVA"}`);
+  }
+
+  // Fornisce lo stato attuale (servirà sia per la CLI che per il Web)
+  async getSystemStatus(): Promise<any> {
+    const soilMoistureData = await this.humiditySensor?.readProperty("soilMoisture");
+    const soilMoisture = await soilMoistureData?.value();
+
+    const temperatureData = await this.humiditySensor?.readProperty("temperature");
+    const temperature = await temperatureData?.value();
+
+    const luminosityData = await this.lightSensor?.readProperty("luminosity");
+    const luminosity = await luminosityData?.value();
+
+    const simulatedTimeData = await this.lightSensor?.readProperty("simulatedTime");
+    const simulatedTime = await simulatedTimeData?.value();
+
+    const isPumpingData = await this.pump?.readProperty("isPumping");
+    const isPumping = await isPumpingData?.value();
+
+    const flowRateData = await this.pump?.readProperty("flowRate");
+    const flowRate = await flowRateData?.value();
+
+    const totalWaterUsedData = await this.pump?.readProperty("totalWaterUsed");
+    const totalWaterUsed = await totalWaterUsedData?.value();
+
+    return {
+      sensors: {
+        soilMoisture,
+        temperature,
+        luminosity,
+        simulatedTime
+      },
+      pump: {
+        isPumping,
+        flowRate,
+        totalWaterUsed,
+      },
+      config: {
+        isAutoMode: this.isAutoMode,
+        minSoilMoisture: this.minSoilMoisture,
+        maxSoilMoisture: this.maxSoilMoisture,
+        minLightForIrrigation: this.minLightForIrrigation,
+      },
+    };
+  }
   async init(): Promise<void> {
     try {
       console.log("\n[ORCHESTRATOR] Inizializzazione in corso...");
