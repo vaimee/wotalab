@@ -98,6 +98,9 @@ export class IrrigationOrchestrator {
       const isPumpingData = await this.pump.readProperty("isPumping");
       const isPumping = await isPumpingData?.value() as boolean;
 
+      const simulatedTimeData = await this.lightSensor?.readProperty("simulatedTime");
+      const simulatedTime = await simulatedTimeData?.value() as string;
+
       const temperatureData = await this.humiditySensor?.readProperty("temperature");
       const temperature = await temperatureData?.value() as number;
 
