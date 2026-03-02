@@ -6,6 +6,7 @@ import { createWindowSensor } from "./things/windowSensor.js";
 import { createLightSensor } from "./things/lightSensor.js";
 import { createTempHumiditySensor } from "./things/tempHumiditySensor.js";
 import { createRelayActuator } from "./things/relayActuator.js";
+import { createHouseController } from "./things/houseController.js";
 import { startRoomOrchestrator } from "./orchestrators/roomOrchestrator.js";
 
 const { HttpServer } = httpBinding;
@@ -16,10 +17,13 @@ async function main() {
 
   const wot = await servient.start();
 
-  const presence = await createPresenceSensor(wot as any);
-  const windowS = await createWindowSensor(wot as any);
-  const light = await createLightSensor(wot as any);
-  const th = await createTempHumiditySensor(wot as any);
+  const controller = await createHouseController(wot as any);
+  const getSim = () => controller.state.simulationEnabled;
+
+  const presence = await createPresenceSensor(wot as any, getSim);
+  const windowS = await createWindowSensor(wot as any, getSim);
+  const light = await createLightSensor(wot as any, getSim);
+  const th = await createTempHumiditySensor(wot as any, getSim);
   const lightActuator = await createRelayActuator(wot as any, "light-actuator.tm.json");
   const boilerActuator = await createRelayActuator(wot as any, "boiler-actuator.tm.json");
 
@@ -29,6 +33,7 @@ async function main() {
   await th.thing.expose();
   await lightActuator.thing.expose();
   await boilerActuator.thing.expose();
+  await controller.thing.expose();
 
   const stopOrch = startRoomOrchestrator({ 
     presence, 
@@ -36,12 +41,15 @@ async function main() {
     light, 
     th, 
     lightActuator, 
-    boilerActuator 
+    boilerActuator,
+    controller
   });
 
   setInterval(() => {
   console.log(
-    "SIM",
+    "STAT",
+    "mode=", controller.state.currentMode,
+    "alarm=", controller.state.alarmActive ? "!! ALARM !!" : "ok",
     "pres=", presence.state.presence,
     "win=", windowS.state.isOpen,
     "lux=", Math.round(light.state.illuminanceLux),
@@ -52,14 +60,7 @@ async function main() {
 }, 2000);
 
   console.log("WoT API: http://localhost:8080");
-
-  console.log("presence: http://localhost:8080/presencesensor/properties/presence");
-  console.log("window:   http://localhost:8080/windowsensor/properties/isOpen");
-  console.log("light:    http://localhost:8080/lightsensor/properties/illuminanceLux");
-  console.log("temp:     http://localhost:8080/temphumiditysensor/properties/temperature");
-  console.log("hum:      http://localhost:8080/temphumiditysensor/properties/humidityPct");
-  console.log("relay:    http://localhost:8080/relayactuator/properties/isOn");
-  console.log("mode:     http://localhost:8080/relayactuator/properties/mode");
+  console.log("Controller: http://localhost:8080/housecontroller");
 }
 
 main().catch((e) => {

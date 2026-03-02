@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Power, Settings } from 'lucide-vue-next';
+import { Power } from 'lucide-vue-next';
 
 const props = defineProps<{
+  title: string;
   isOn: boolean;
   mode: 'auto' | 'manual';
   status: string;
@@ -13,7 +14,7 @@ const emit = defineEmits(['toggle', 'changeMode']);
 <template>
   <div class="glass-card relay-card">
     <div class="card-header">
-      <span class="card-title">Attuatore Relè</span>
+      <span class="card-title">{{ title }}</span>
       <Power :size="24" :color="isOn ? '#10b981' : '#ef4444'" />
     </div>
     

@@ -25,7 +25,8 @@ export async function createRelayActuator(wot: WoTLike, modelName: string = "rel
   thing.setPropertyReadHandler("status", async () => state.status);
 
   thing.setPropertyWriteHandler("isOn", async (v: unknown) => {
-    const next = Boolean(v);
+    const val = await (v as any).value();
+    const next = Boolean(val);
     const changed = next !== state.isOn;
     state.isOn = next;
     await safeWrite(thing, "isOn", state.isOn);
@@ -33,7 +34,8 @@ export async function createRelayActuator(wot: WoTLike, modelName: string = "rel
   });
 
   thing.setPropertyWriteHandler("mode", async (v: unknown) => {
-    state.mode = v === "manual" ? "manual" : "auto";
+    const val = await (v as any).value();
+    state.mode = val === "manual" ? "manual" : "auto";
     await safeWrite(thing, "mode", state.mode);
   });
 

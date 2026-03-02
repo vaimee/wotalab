@@ -3,6 +3,7 @@ import { every, RandomWalk } from "../utils/sim.js";
 export type LightSimDeps = {
   getLux: () => number;
   getStatus: () => "online" | "offline" | "error";
+  getSimulationEnabled: () => boolean;
   setLux: (v: number) => Promise<void> | void;
 };
 
@@ -25,7 +26,7 @@ export function startLightSimulation(
   const walk = new RandomWalk(deps.getLux(), step, { min, max });
 
   return every(intervalMs, async () => {
-    if (deps.getStatus() !== "online") return;
+    if (deps.getStatus() !== "online" || !deps.getSimulationEnabled()) return;
 
     const next = walk.tick();
     await deps.setLux(next);

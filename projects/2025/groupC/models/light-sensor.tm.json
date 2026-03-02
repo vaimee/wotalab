@@ -31,7 +31,7 @@
             "unit": "unit:LUX",
             "minimum": 0,
             "maximum": 100000,
-            "readOnly": true,
+            "readOnly": false,
             "observable": true
         },
         "status": {
@@ -43,7 +43,7 @@
                 "offline",
                 "error"
             ],
-            "readOnly": true,
+            "readOnly": false,
             "observable": true
         }
     },

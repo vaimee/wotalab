@@ -4,6 +4,7 @@ export type TempHumiditySimDeps = {
   getTemperature: () => number;
   getHumidity: () => number;
   getStatus: () => "online" | "offline" | "error";
+  getSimulationEnabled: () => boolean;
   setTempHumidity: (t: number, h: number) => Promise<void> | void;
 };
 
@@ -36,7 +37,7 @@ export function startTempHumiditySimulation(
   );
 
   return every(intervalMs, async () => {
-    if (deps.getStatus() !== "online") return;
+    if (deps.getStatus() !== "online" || !deps.getSimulationEnabled()) return;
 
     const t = tempWalk.tick();
     const h = humWalk.tick();

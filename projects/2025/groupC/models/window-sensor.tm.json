@@ -25,7 +25,7 @@
             "type": "boolean",
             "title": "Window Open",
             "description": "True if the window is open, false if it is closed",
-            "readOnly": true,
+            "readOnly": false,
             "observable": true
         },
         "status": {
@@ -37,7 +37,7 @@
                 "offline",
                 "error"
             ],
-            "readOnly": true,
+            "readOnly": false,
             "observable": true
         }
     },
