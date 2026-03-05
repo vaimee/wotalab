@@ -7,7 +7,7 @@ import { IrrigationOrchestrator } from "./Orchestrator";
 
 async function main() {
   const servient = new Servient();
-  servient.addServer(new HttpServer({ port: 8080 }));
+  servient.addServer(new HttpServer({ port: 8080 })); // imposta tutte le thing sulla porta 8080
 
   // Servient per l'orchestratore (solo client)
   const orchestratorServient = new Servient();
@@ -37,8 +37,47 @@ async function main() {
   // Avvia il monitoraggio automatico
   orchestrator.startMonitoring(5);
 
-  console.log("\n[MAIN] Sistema di irrigazione completamente avviato");
-  console.log("[MAIN] Premi CTRL+C per terminare\n");
+  // Avvia le simulazioni
+  lightSensor.startSimulation();
+  humiditySensor.startSimulation();
+
+  // Connetti il sensore di umidità con l'orchestrator per simulazione realistica
+  orchestrator.setHumiditySensor(humiditySensor)
+
+  console.log("\n--- COMANDI DISPONIBILI ---");
+  console.log("  's' - Stato del sistema");
+  console.log("  'a' - Toggle modalità automatica");
+  console.log("  'm' - Irrigazione manuale (30 secondi)");
+  console.log("  'x' - Ferma irrigazione");
+  console.log("  'q' - Esci\n");
+
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+
+  process.stdin.on("data", async (key) => {
+    const command = key.toString();
+
+    if (command === "q") {
+      console.log("\n\n[STOP] Arresto del sistema...");
+      await cleanup();
+      process.exit(0);
+    } else if (command === "s") {
+      const status = await orchestrator.getSystemStatus();
+      console.log("\n--- STATO DEL SISTEMA ---");
+      console.log(`  💧 Umidità terreno : ${status.sensors.soilMoisture?.toFixed(1)}%`);
+      console.log(`  🌡️ Temperatura     : ${status.sensors.temperature?.toFixed(1)}°C`);
+      console.log(`  ☀️ Luminosità      : ${status.sensors.luminosity?.toFixed(0)} lux`);
+      console.log(`  ⚙️ Pompa           : ${status.pump.isPumping ? "IN FUNZIONE" : "FERMA"}`);
+      console.log(`  🚰 Acqua totale    : ${status.pump.totalWaterUsed?.toFixed(2)} L\n`);
+    } else if (command === "a") {
+      orchestrator.toggleAutoMode();
+    } else if (command === "m") {
+      await orchestrator.manualIrrigation(30);
+    } else if (command === "x") {
+      await orchestrator.stopIrrigation();
+    }
+  });
 
   async function cleanup() {
     console.log("[MAIN] Pulizia risorse...");
