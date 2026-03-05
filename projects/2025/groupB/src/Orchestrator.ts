@@ -184,7 +184,12 @@ export class IrrigationOrchestrator {
 
       // Log stato attuale
       const now = new Date().toLocaleTimeString('it-IT');
-      console.log(`[${now}] Umidità: ${soilMoisture.toFixed(1)}% | Luce: ${luminosity.toFixed(0)} lux | Pompa: ${isPumping ? 'ATTIVA' : 'Spenta'}`);
+      // Formattazione allineata con icone per lettura rapida
+      const statusIcon = isPumping ? "🚿 Pompa: ON" : "🚿 Pompa: OFF";
+      const soilStr = `💧 ${soilMoisture.toFixed(1)}%`.padEnd(10);
+      const lightStr = `☀️ ${luminosity.toFixed(0)} lux`.padEnd(12);
+      
+      console.log(`[MONITOR] ${now} | ${soilStr} | ${lightStr} | ${statusIcon}`);
 
       // LOGICA DI IRRIGAZIONE
       if (!this.isAutoMode) {
@@ -194,7 +199,7 @@ export class IrrigationOrchestrator {
       
       // Se la pompa è attiva e l'umidità ha raggiunto il massimo -> FERMA
       if (isPumping && soilMoisture >= this.maxSoilMoisture) {
-        console.log(`  [STOP] Umidità massima raggiunta (${this.maxSoilMoisture}%)`);
+        console.log(`\n🛑 [STOP] STOP IRRIGAZIONE: Umidità target raggiunta (${this.maxSoilMoisture}%)\n`);
 
         // Notifica il sensore che la pompa si sta fermando
         if (this.humiditySensorThing) {
@@ -208,10 +213,9 @@ export class IrrigationOrchestrator {
       // Se l'umidità è bassa e c'è luce -> AVVIA irrigazione
       if (soilMoisture < this.minSoilMoisture && !isPumping) {
         if (luminosity >= this.minLightForIrrigation) {
-          console.log(`  [START] Avvio irrigazione (umidità troppo bassa)`);
+          console.log(`\n [START] Avvio irrigazione: Umidità critica rilevata (<${this.minSoilMoisture}%)\n`);
           await this.startIrrigation();
         } else {
-          console.log(`  [WAIT] Luce insufficiente per irrigare`);
         }
       }
     } catch (error) {
@@ -243,7 +247,7 @@ export class IrrigationOrchestrator {
       const moistureDeficit = this.maxSoilMoisture - soilMoisture;
       const duration = Math.min(Math.max(moistureDeficit * 2, 10), 60);
 
-      console.log(`\n[START] Avvio irrigazione per ${duration} secondi...`);
+      console.log(`   >> [START] Avvio Irrigazione per ${duration.toFixed(0)} secondi...`);
       
       // Notifica il sensore che la pompa sta per attivarsi
       if (this.humiditySensorThing) {

@@ -72,7 +72,6 @@ export class HumiditySensorThing{
                 console.log(`[EVENT] Terreno umido (${this.soilMoisture.toFixed(1)}%)`);
             }
             
-            console.log(`[SENSOR] Umidità terreno: ${this.soilMoisture.toFixed(1)}% | Temperatura: ${this.temperature.toFixed(1)}°C`)
         }, 3000)
     }
     

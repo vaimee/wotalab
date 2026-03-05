@@ -67,7 +67,6 @@ export class LightSensorThing {
       }
 
       const timeStr = this.getTimeString();
-      console.log(`[SENSOR] Luminosità: ${this.luminosity.toFixed(0)} lux (${timeStr})`);
     }, 3000);
   }
 
