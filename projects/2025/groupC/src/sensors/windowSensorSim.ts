@@ -3,7 +3,7 @@ import { every, rareToggle } from "../utils/sim.js";
 export type WindowSimDeps = {
   getIsOpen: () => boolean;
   getStatus: () => "online" | "offline" | "error";
-  getSimulationEnabled: () => boolean;
+
   setIsOpen: (v: boolean) => Promise<void> | void;
 };
 
@@ -16,11 +16,11 @@ export function startWindowSimulation(
   deps: WindowSimDeps,
   opts: WindowSimOptions = {}
 ) {
-  const intervalMs = opts.intervalMs ?? 1500;
+  const intervalMs = opts.intervalMs ?? 10000;
   const p = opts.toggleProbability ?? 0.01;
 
   return every(intervalMs, async () => {
-    if (deps.getStatus() !== "online" || !deps.getSimulationEnabled()) return;
+    if (deps.getStatus() !== "online") return;
 
     const current = deps.getIsOpen();
     const next = rareToggle(current, p);

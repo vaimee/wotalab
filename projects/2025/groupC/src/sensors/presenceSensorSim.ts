@@ -3,7 +3,7 @@ import { every, rareToggle } from "../utils/sim.js";
 export type PresenceSimDeps = {
   getPresence: () => boolean;
   getStatus: () => "online" | "offline" | "error";
-  getSimulationEnabled: () => boolean;
+
   setPresence: (v: boolean) => Promise<void> | void;
 };
 
@@ -16,17 +16,6 @@ export function startPresenceSimulation(
   deps: PresenceSimDeps,
   opts: PresenceSimOptions = {}
 ) {
-  const intervalMs = opts.intervalMs ?? 1000;
-  const p = opts.toggleProbability ?? 0.05;
-
-  return every(intervalMs, async () => {
-    if (deps.getStatus() !== "online" || !deps.getSimulationEnabled()) return;
-
-    const current = deps.getPresence();
-    const next = rareToggle(current, p);
-
-    if (next !== current) {
-      await deps.setPresence(next);
-    }
-  });
+  // Return an empty stop function. Presence is no longer simulated randomly.
+  return () => { };
 }

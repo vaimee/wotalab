@@ -9,7 +9,14 @@ type Relay = {
   setRelay: (v: boolean) => Promise<boolean> | boolean;
 };
 type HouseController = {
-  state: { currentMode: string; alarmActive: boolean };
+  state: {
+    currentMode: string;
+    alarmActive: boolean;
+    targetTemperatureHome: number;
+    targetTemperatureNight: number;
+    targetTemperatureEco: number;
+    targetTemperatureVacation: number;
+  };
   triggerAlarm: (reason: string) => Promise<void>;
 };
 
@@ -36,7 +43,7 @@ export function startRoomOrchestrator(
   opts: OrchestratorOptions = {}
 ) {
   const intervalMs = opts.intervalMs ?? 1000;
-  
+
   return every(intervalMs, async () => {
     const { currentMode } = deps.controller.state;
 
@@ -50,24 +57,24 @@ export function startRoomOrchestrator(
       }
     }
 
-    // --- LOGIC 3: ECO SAVINGS ---
-    // Change thresholds based on mode
-    let tOn = opts.tempOnThreshold ?? 19;
-    let tOff = opts.tempOffThreshold ?? 22;
-
-    if (currentMode === "ECO") {
-      tOn = 16; // Lower target temperature for ECO
-      tOff = 18;
-    } else if (currentMode === "NIGHT") {
-      tOn = 18;
-      tOff = 20;
+    // --- LOGIC 3: ECO SAVINGS & TARGET TEMP ---
+    let targetTemp = deps.controller.state.targetTemperatureHome ?? 22;
+    if (currentMode === "NIGHT") {
+      targetTemp = deps.controller.state.targetTemperatureNight ?? 19;
+    } else if (currentMode === "ECO") {
+      targetTemp = deps.controller.state.targetTemperatureEco ?? 18;
+    } else if (currentMode === "VACATION") {
+      targetTemp = deps.controller.state.targetTemperatureVacation ?? 15;
     }
+
+    let tOn = targetTemp - 0.5;
+    let tOff = targetTemp + 0.5;
 
     // --- LIGHT LOGIC ---
     if (deps.lightActuator.state.status === "online" && deps.lightActuator.state.mode === "auto") {
       const presenceOk = deps.presence.state.status === "online" && deps.presence.state.presence;
       const lux = deps.light.state.status === "online" ? deps.light.state.illuminanceLux : 999999;
-      
+
       const luxOn = opts.luxOnThreshold ?? 200;
       const luxOff = opts.luxOffThreshold ?? 260;
 

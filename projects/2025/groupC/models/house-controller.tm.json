@@ -34,9 +34,32 @@
             "description": "Reason why the alarm was triggered",
             "readOnly": true
         },
-        "simulationEnabled": {
-            "type": "boolean",
-            "description": "If true, sensors will generate random data. If false, they will stay on their current values.",
+        "targetTemperatureHome": {
+            "type": "number",
+            "description": "Target temperature for the room during HOME mode",
+            "minimum": 10,
+            "maximum": 40,
+            "readOnly": false
+        },
+        "targetTemperatureNight": {
+            "type": "number",
+            "description": "Target temperature for the room during NIGHT mode",
+            "minimum": 10,
+            "maximum": 40,
+            "readOnly": false
+        },
+        "targetTemperatureEco": {
+            "type": "number",
+            "description": "Target temperature for the room during ECO mode",
+            "minimum": 10,
+            "maximum": 40,
+            "readOnly": false
+        },
+        "targetTemperatureVacation": {
+            "type": "number",
+            "description": "Target temperature for the room during VACATION mode",
+            "minimum": 10,
+            "maximum": 40,
             "readOnly": false
         }
     },

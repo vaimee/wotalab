@@ -17,7 +17,10 @@ export function useWoT() {
       currentMode: 'HOME',
       alarmActive: false,
       alarmReason: '',
-      simulationEnabled: true
+      targetTemperatureHome: 22,
+      targetTemperatureNight: 19,
+      targetTemperatureEco: 18,
+      targetTemperatureVacation: 15
     }
   });
 
@@ -35,17 +38,17 @@ export function useWoT() {
   const fetchData = async () => {
     try {
       const [
-        pVal, lVal, tVal, hVal, wVal, 
+        pVal, lVal, tVal, hVal, wVal,
         lOn, lMode, lStatus,
         bOn, bMode, bStatus,
-        cMode, cAlarm, cReason, cSim
+        cMode, cAlarm, cReason, cTargetTempHome, cTargetTempNight, cTargetTempEco, cTargetTempVacation
       ] = await Promise.all([
         safeFetch('/api/presencesensor/properties/presence'),
         safeFetch('/api/lightsensor/properties/illuminanceLux'),
         safeFetch('/api/temphumiditysensor/properties/temperature'),
         safeFetch('/api/temphumiditysensor/properties/humidityPct'),
         safeFetch('/api/windowsensor/properties/isOpen'),
-        
+
         safeFetch('/api/lightactuator/properties/isOn'),
         safeFetch('/api/lightactuator/properties/mode'),
         safeFetch('/api/lightactuator/properties/status'),
@@ -57,7 +60,10 @@ export function useWoT() {
         safeFetch('/api/housecontroller/properties/currentMode'),
         safeFetch('/api/housecontroller/properties/alarmActive'),
         safeFetch('/api/housecontroller/properties/alarmReason'),
-        safeFetch('/api/housecontroller/properties/simulationEnabled')
+        safeFetch('/api/housecontroller/properties/targetTemperatureHome'),
+        safeFetch('/api/housecontroller/properties/targetTemperatureNight'),
+        safeFetch('/api/housecontroller/properties/targetTemperatureEco'),
+        safeFetch('/api/housecontroller/properties/targetTemperatureVacation')
       ]);
 
       data.value.sensors.presence.value = pVal;
@@ -65,7 +71,7 @@ export function useWoT() {
       data.value.sensors.temp.value = tVal;
       data.value.sensors.hum.value = hVal;
       data.value.sensors.window.value = wVal;
-      
+
       data.value.actuators.light.isOn = lOn;
       data.value.actuators.light.mode = lMode;
       data.value.actuators.light.status = lStatus;
@@ -77,8 +83,11 @@ export function useWoT() {
       data.value.controller.currentMode = cMode;
       data.value.controller.alarmActive = cAlarm;
       data.value.controller.alarmReason = cReason;
-      data.value.controller.simulationEnabled = cSim;
-      
+      data.value.controller.targetTemperatureHome = cTargetTempHome;
+      data.value.controller.targetTemperatureNight = cTargetTempNight;
+      data.value.controller.targetTemperatureEco = cTargetTempEco;
+      data.value.controller.targetTemperatureVacation = cTargetTempVacation;
+
       loading.value = false;
       error.value = null;
     } catch (e: any) {

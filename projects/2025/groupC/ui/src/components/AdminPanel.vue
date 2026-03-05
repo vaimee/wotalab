@@ -5,8 +5,6 @@ import {
   Zap, 
   ShieldAlert, 
   Thermometer, 
-  Droplets, 
-  Sun, 
   Users, 
   AppWindow,
   RefreshCw
@@ -31,9 +29,7 @@ const updateSensor = (thing: string, prop: string, value: any) => {
   emit('setProperty', thing, prop, value);
 };
 
-const toggleSimulation = () => {
-  emit('setProperty', 'housecontroller', 'simulationEnabled', !props.data.controller.simulationEnabled);
-};
+
 </script>
 
 <template>
@@ -50,25 +46,7 @@ const toggleSimulation = () => {
       </div>
 
       <div class="admin-content">
-        <!-- SIMULATION MASTER TOGGLE -->
-        <section class="admin-section simulation-master">
-          <div class="section-title">
-            <RefreshCw :class="{ 'spinning': data.controller.simulationEnabled }" />
-            <h3>Simulation Engine</h3>
-          </div>
-          <button 
-            @click="toggleSimulation" 
-            :class="['sim-toggle-btn', { active: data.controller.simulationEnabled }]"
-          >
-            <span class="status-dot"></span>
-            {{ data.controller.simulationEnabled ? 'RANDOM SIM: ON' : 'MANUAL MODE: ON' }}
-          </button>
-          <p class="sim-hint">
-            {{ data.controller.simulationEnabled 
-              ? 'Sensors are generating random data.' 
-              : 'Sensors are locked. Use sliders below.' }}
-          </p>
-        </section>
+
 
         <!-- ALARM SECTION -->
         <section v-if="data.controller.alarmActive" class="admin-section alarm-active">
@@ -107,41 +85,55 @@ const toggleSimulation = () => {
             <h3>Sensor Overrides</h3>
           </div>
           
-          <div class="override-item">
+          <div v-if="data.controller.currentMode === 'HOME'" class="override-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 0.5rem;">
             <div class="label-row">
-              <span class="label"><Thermometer :size="16" /> Temp</span>
-              <span class="value">{{ data.sensors.temp.value.toFixed(1) }}°C</span>
+              <span class="label"><Thermometer :size="16" /> Target Temp (HOME)</span>
+              <span class="value">{{ data.controller.targetTemperatureHome?.toFixed(1) || '22.0' }}°C</span>
             </div>
             <input 
               type="range" min="10" max="40" step="0.5" 
-              :value="data.sensors.temp.value"
-              @input="(e: any) => updateSensor('temphumiditysensor', 'temperature', parseFloat(e.target.value))"
+              :value="data.controller.targetTemperatureHome ?? 22"
+              @input="(e: any) => updateSensor('housecontroller', 'targetTemperatureHome', parseFloat(e.target.value))"
             >
           </div>
 
-          <div class="override-item">
+          <div v-if="data.controller.currentMode === 'NIGHT'" class="override-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
             <div class="label-row">
-              <span class="label"><Droplets :size="16" /> Humidity</span>
-              <span class="value">{{ data.sensors.hum.value.toFixed(0) }}%</span>
+              <span class="label"><Thermometer :size="16" /> Target Temp (NIGHT)</span>
+              <span class="value">{{ data.controller.targetTemperatureNight?.toFixed(1) || '19.0' }}°C</span>
             </div>
             <input 
-              type="range" min="0" max="100" 
-              :value="data.sensors.hum.value"
-              @input="(e: any) => updateSensor('temphumiditysensor', 'humidityPct', parseFloat(e.target.value))"
+              type="range" min="10" max="40" step="0.5" 
+              :value="data.controller.targetTemperatureNight ?? 19"
+              @input="(e: any) => updateSensor('housecontroller', 'targetTemperatureNight', parseFloat(e.target.value))"
             >
           </div>
 
-          <div class="override-item">
+          <div v-if="data.controller.currentMode === 'ECO'" class="override-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
             <div class="label-row">
-              <span class="label"><Sun :size="16" /> Light</span>
-              <span class="value">{{ Math.round(data.sensors.light.value) }} lux</span>
+              <span class="label"><Thermometer :size="16" /> Target Temp (ECO)</span>
+              <span class="value">{{ data.controller.targetTemperatureEco?.toFixed(1) || '18.0' }}°C</span>
             </div>
             <input 
-              type="range" min="0" max="1000" 
-              :value="data.sensors.light.value"
-              @input="(e: any) => updateSensor('lightsensor', 'illuminanceLux', parseFloat(e.target.value))"
+              type="range" min="10" max="40" step="0.5" 
+              :value="data.controller.targetTemperatureEco ?? 18"
+              @input="(e: any) => updateSensor('housecontroller', 'targetTemperatureEco', parseFloat(e.target.value))"
             >
           </div>
+
+          <div v-if="data.controller.currentMode === 'VACATION'" class="override-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <div class="label-row">
+              <span class="label"><Thermometer :size="16" /> Target Temp (AWAY)</span>
+              <span class="value">{{ data.controller.targetTemperatureVacation?.toFixed(1) || '15.0' }}°C</span>
+            </div>
+            <input 
+              type="range" min="10" max="40" step="0.5" 
+              :value="data.controller.targetTemperatureVacation ?? 15"
+              @input="(e: any) => updateSensor('housecontroller', 'targetTemperatureVacation', parseFloat(e.target.value))"
+            >
+          </div>
+
+
 
           <div class="toggle-grid">
             <button 
@@ -265,66 +257,7 @@ const toggleSimulation = () => {
   margin-bottom: 1rem;
 }
 
-.simulation-master {
-  background: rgba(56, 189, 248, 0.05);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  padding: 1rem;
-  border-radius: 12px;
-}
 
-.sim-toggle-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: 8px;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  font-weight: 700;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sim-toggle-btn.active {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: #38bdf8;
-  color: #38bdf8;
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #475569;
-  transition: all 0.3s;
-}
-
-.active .status-dot {
-  background: #38bdf8;
-  box-shadow: 0 0 8px #38bdf8;
-}
-
-.sim-hint {
-  font-size: 0.7rem;
-  color: #64748b;
-  margin-top: 0.75rem;
-  text-align: center;
-  font-style: italic;
-}
-
-.spinning {
-  animation: spin 3s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 
 .mode-grid {
   display: grid;
