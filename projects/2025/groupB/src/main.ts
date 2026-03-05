@@ -81,6 +81,9 @@ async function main() {
 
   async function cleanup() {
     console.log("[MAIN] Pulizia risorse...");
+    orchestrator.stopMonitoring();
+    lightSensor.stopSimulation();
+    humiditySensor.stopSimulation();
     await orchestrator.destroy();
     await lightSensor.destroy();
     await humiditySensor.destroy();
