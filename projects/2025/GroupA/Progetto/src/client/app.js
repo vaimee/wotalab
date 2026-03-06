@@ -5,6 +5,7 @@ const ROOMS = [
     { name: 'Bagno', port: 8083 }
 ];
 
+// Aggiunge un evento alla sezione eventi
 function addEvent(message) {
     const eventsDiv = document.getElementById('events');
     const noEvents = eventsDiv.querySelector('.no-events');
