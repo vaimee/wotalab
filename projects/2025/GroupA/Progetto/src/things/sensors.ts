@@ -70,19 +70,19 @@ servient.start().then(async (WoT) => {
             }
         });
 
-        let currentTemp = room.initialTemp;
-        let targetTemp = 22;
-        let isHeatingOn = false;
-        let isValveOpen = false;
+        let currentTemp = room.initialTemp; //temperatura iniziale della stanza
+        let targetTemp = 22; //valore iniziale della temperatura target
+        let isHeatingOn = false; //stato del riscaldamento
+        let isValveOpen = false; //stato della valvola 
 
-        thing.setPropertyReadHandler("temperature", async () => currentTemp);
-        thing.setPropertyReadHandler("targetTemperature", async () => targetTemp);
-        thing.setPropertyWriteHandler("targetTemperature", async (value) => {
+        thing.setPropertyReadHandler("temperature", async () => currentTemp); //gestisce la lettura della temperatura attuale
+        thing.setPropertyReadHandler("targetTemperature", async () => targetTemp); //gestisce la lettura della temperatura target
+        thing.setPropertyWriteHandler("targetTemperature", async (value) => { //gestisce la scrittura della temperatura target
             targetTemp = Number(value);
         });
-        thing.setPropertyReadHandler("isValveOpen", async () => isValveOpen);
+        thing.setPropertyReadHandler("isValveOpen", async () => isValveOpen); //gestisce la lettura dello stato della valvola
 
-        thing.setActionHandler("setHeatingState", async (params) => {
+        thing.setActionHandler("setHeatingState", async (params) => { 
             const state = await params?.value();
             isHeatingOn = Boolean(state);
 
@@ -101,7 +101,8 @@ servient.start().then(async (WoT) => {
             return undefined;
         });
 
-        thing.setActionHandler("setTargetTemperature", async (params) => {
+        //gestisce l'azione per impostare la temperatura target
+        thing.setActionHandler("setTargetTemperature", async (params) => { 
             const temp = await params?.value();
             targetTemp = Number(temp);
             console.log(`${room.name} - Target temperature: ${targetTemp}°C`);

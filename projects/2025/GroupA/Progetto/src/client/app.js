@@ -7,65 +7,65 @@ const ROOMS = [
 
 // Aggiunge un evento alla sezione eventi
 function addEvent(message) {
-    const eventsDiv = document.getElementById('events');
-    const noEvents = eventsDiv.querySelector('.no-events');
+    const eventsDiv = document.getElementById('events'); 
+    const noEvents = eventsDiv.querySelector('.no-events'); 
     if (noEvents) noEvents.remove();
 
     const eventItem = document.createElement('div');
     eventItem.className = 'event-item';
-    const timestamp = new Date().toLocaleTimeString();
-    eventItem.textContent = `[${timestamp}] ${message}`;
-    eventsDiv.insertBefore(eventItem, eventsDiv.firstChild);
+    const timestamp = new Date().toLocaleTimeString(); //Aggiunge l'ora all'evento
+    eventItem.textContent = `[${timestamp}] ${message}`; //Formatta il messaggio con l'ora
+    eventsDiv.insertBefore(eventItem, eventsDiv.firstChild); //inserisce il nuovo evento in cima alla lista
 
-    if (eventsDiv.children.length > 10) {
-        eventsDiv.removeChild(eventsDiv.lastChild);
+    if (eventsDiv.children.length > 10) { 
+        eventsDiv.removeChild(eventsDiv.lastChild); //Rimuove l'evento più vecchio se ci sono più di 10 eventi
     }
 }
 
-async function setTarget(roomName) {
-    const targetTemp = parseFloat(document.getElementById(`target${roomName}`).value);
-    const room = ROOMS.find(r => r.name === roomName);
+async function setTarget(roomName) { //imposta la temperatura target per una stanza specifica
+    const targetTemp = parseFloat(document.getElementById(`target${roomName}`).value); //prende il valore inserito dall'utente
+    const room = ROOMS.find(r => r.name === roomName); //trova la stanza corrispondente nell'array ROOMS
 
     try {
-        await fetch(`http://localhost:${room.port}/sensor${roomName.toLowerCase()}/actions/setTargetTemperature`, {
+        await fetch(`http://localhost:${room.port}/sensor${roomName.toLowerCase()}/actions/setTargetTemperature`, { //invia una richiesta POST al sensore della stanza per impostare la temperatura target
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: targetTemp.toString()
         });
-        addEvent(`${roomName} - Temperatura target: ${targetTemp}°C`);
+        addEvent(`${roomName} - Temperatura target: ${targetTemp}°C`); //aggiunge un evento alla sezione eventi indicando la nuova temperatura target impostata
     } catch (error) {
         console.error('Errore:', error);
     }
 }
 
-async function updateDashboard() {
+async function updateDashboard() { //aggiorna i dati visualizzati sulla dashboard
     try {
         for (const room of ROOMS) {
-            const tempResponse = await fetch(`http://localhost:${room.port}/sensor${room.name.toLowerCase()}/properties/temperature`);
-            const temp = await tempResponse.json();
-            document.getElementById(`temp${room.name}`).textContent = temp.toFixed(1);
+            const tempResponse = await fetch(`http://localhost:${room.port}/sensor${room.name.toLowerCase()}/properties/temperature`); //invia una richiesta GET al sensore della stanza per ottenere la temperatura attuale
+            const temp = await tempResponse.json(); //prende la temperatura attuale dalla risposta
+            document.getElementById(`temp${room.name}`).textContent = temp.toFixed(1); //aggiorna il testo dell'elemento HTML corrispondente alla temperatura della stanza con il valore ottenuto
 
-            const valveResponse = await fetch(`http://localhost:${room.port}/sensor${room.name.toLowerCase()}/properties/isValveOpen`);
-            const isValveOpen = await valveResponse.json();
-            const valveSpan = document.getElementById(`valve${room.name}`);
+            const valveResponse = await fetch(`http://localhost:${room.port}/sensor${room.name.toLowerCase()}/properties/isValveOpen`); //invia una richiesta GET al sensore della stanza per verificare se la valvola è aperta
+            const isValveOpen = await valveResponse.json(); //prende lo stato della valvola dalla risposta
+            const valveSpan = document.getElementById(`valve${room.name}`); //seleziona l'elemento HTML corrispondente alla valvola della stanza
 
-            if (isValveOpen) {
+            if (isValveOpen) { //valvola aperta
                 valveSpan.textContent = 'Attivo';
                 valveSpan.className = 'active';
-            } else {
+            } else { //valvola chiusa
                 valveSpan.textContent = 'Inattivo';
                 valveSpan.className = '';
             }
         }
 
-        const isOnResponse = await fetch(`${HEATER_URL}/properties/isOn`);
-        const isOn = await isOnResponse.json();
-        const statusSpan = document.getElementById('heaterStatus');
+        const isOnResponse = await fetch(`${HEATER_URL}/properties/isOn`); //invia una richiesta GET al sistema di riscaldamento per verificare se è acceso
+        const isOn = await isOnResponse.json(); //prende lo stato del sistema di riscaldamento dalla risposta
+        const statusSpan = document.getElementById('heaterStatus'); 
 
-        if (isOn) {
+        if (isOn) { //sistema di riscaldamento acceso
             statusSpan.textContent = 'Acceso';
             statusSpan.className = 'on';
-        } else {
+        } else { //sistema di riscaldamento spento
             statusSpan.textContent = 'Spento';
             statusSpan.className = '';
         }
@@ -75,7 +75,7 @@ async function updateDashboard() {
 }
 
 //limita input a un solo decimale
-document.querySelectorAll('input[type="number"]').forEach(input => {
+document.querySelectorAll('input[type="number"]').forEach(input => { 
     input.addEventListener('input', function(e) {
         const value = e.target.value;
         if (value.includes('.')) {

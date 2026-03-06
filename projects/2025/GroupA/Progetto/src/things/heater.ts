@@ -4,8 +4,8 @@ import { HttpServer } from "@node-wot/binding-http"; //HTTP: per lettura  (per a
 const servient = new Servient();
 servient.addServer(new HttpServer({ port: 8080 }));
 
-servient.start().then(async (WoT) => {
-    const thing = await WoT.produce({
+servient.start().then(async (WoT) => { 
+    const thing = await WoT.produce({ //definizione della Thing Description per il sistema di riscaldamento
         title: "HeatingSystem",
         description: "Sistema di riscaldamento",
         support: "https://github.com/eclipse-thingweb/node-wot/",
@@ -53,16 +53,17 @@ servient.start().then(async (WoT) => {
         }
     });
 
-    let targetTemp = 22;
-    let isOn = false;
+    let targetTemp = 22; //valore iniziale della temperatura target
+    let isOn = false; //riscaldamento spento inizialmente
 
     thing.setPropertyReadHandler("targetTemperature", async () => targetTemp);
-    thing.setPropertyWriteHandler("targetTemperature", async (value) => {
+    thing.setPropertyWriteHandler("targetTemperature", async (value) => { 
         targetTemp = Number(value);
     });
 
     thing.setPropertyReadHandler("isOn", async () => isOn);
 
+    //gestisce l'azione per impostare la temperatura target
     thing.setActionHandler("setTargetTemperature", async (params) => {
         const temp = await params?.value();
         targetTemp = Number(temp);
@@ -70,12 +71,14 @@ servient.start().then(async (WoT) => {
         return undefined;
     });
 
-    thing.setActionHandler("turnOn", async () => {
+    //gestisce l'azione per accendere il riscaldamento
+    thing.setActionHandler("turnOn", async () => { 
         isOn = true;
         console.log("Riscaldamento acceso");
         return undefined;
     });
 
+    //gestisce l'azione per spegnere il riscaldamento
     thing.setActionHandler("turnOff", async () => {
         isOn = false;
         console.log("Riscaldamento spento");

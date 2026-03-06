@@ -23,27 +23,27 @@ servient.start().then(async (WoT) => {
 
     console.log("Orchestratore avviato");
 
-    for (const { sensor } of sensors) {
+    for (const { sensor } of sensors) { //inizialmente imposta tutte le valvole chiuse e il riscaldamento spento
         await sensor.invokeAction("setHeatingState", false);
     }
     await heater.invokeAction("turnOff");
 
     setInterval(async () => {
-        const isOnOutput = await heater.readProperty("isOn");
+        const isOnOutput = await heater.readProperty("isOn"); //legge lo stato attuale del riscaldamento
         const isOn = await isOnOutput.value();
 
-        let needsHeating = false;
+        let needsHeating = false; //controlla se almeno una stanza è sotto la temperatura target - 0.1
 
-        for (const { name, sensor } of sensors) {
-            const tempOutput = await sensor.readProperty("temperature");
-            const targetOutput = await sensor.readProperty("targetTemperature");
+        for (const { name, sensor } of sensors) { //per ogni stanza, legge la temperatura attuale e quella target
+            const tempOutput = await sensor.readProperty("temperature"); //legge la temperatura attuale
+            const targetOutput = await sensor.readProperty("targetTemperature"); //legge la temperatura target
 
             const temp = Number(await tempOutput.value());
             const target = Number(await targetOutput.value());
 
-            console.log(`${name}: ${temp}°C / Target: ${target}°C`);
+            console.log(`${name}: ${temp}°C / Target: ${target}°C`); //stampa la temperatura attuale e quella target per ogni stanza
 
-            if (temp <= target - 0.1) {
+            if (temp <= target - 0.1) { //se la temperatura è sotto target - 0.1, serve riscaldamento
                 needsHeating = true;
             }
         }
