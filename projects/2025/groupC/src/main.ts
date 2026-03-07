@@ -74,7 +74,7 @@ async function main() {
       "light=", lightActuator.state.isOn,
       "boiler=", boilerActuator.state.isOn
     );
-  }, 2000);
+  }, 10000);
 
   console.log("WoT API: http://localhost:8080");
   console.log("Controller: http://localhost:8080/housecontroller");
