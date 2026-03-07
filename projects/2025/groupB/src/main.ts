@@ -4,15 +4,60 @@ import { IrrigationPumpThing } from "./IrrigationPumpThing";
 import { LightSensorThing } from "./LightSensorThing";
 import { HumiditySensorThing } from "./HumiditySensorThing";
 import { IrrigationOrchestrator } from "./Orchestrator";
+import express from "express";
+import { WebSocketServer, WebSocket } from "ws";
+import * as http from "http";
+import * as path from "path";
 
 async function main() {
-  const servient = new Servient();
-  servient.addServer(new HttpServer({ port: 8080 })); // imposta tutte le thing sulla porta 8080
+  console.log("============================================================");
+  console.log("   SISTEMA DI IRRIGAZIONE INTELLIGENTE - WoT");
+  console.log("============================================================\n");
 
-  // Servient per l'orchestratore (solo client)
-  const orchestratorServient = new Servient();
+  try {
+    // 1. Setup Express per servire la dashboard web
+    const app = express();
+    const server = http.createServer(app);
+    
+    // Servire file statici dalla directory principale e www
+    app.use(express.static(path.join(__dirname, '..')));
+    app.use(express.json());
+    
+    // Route per la homepage
+    app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, '..', 'www', 'index.html'));
+    });
 
-  console.log("[MAIN] Inizializzazione Things...");
+    // API endpoint per ottenere lo stato del sistema
+    let orchestrator: IrrigationOrchestrator;
+    app.get('/api/status', async (req, res) => {
+      try {
+        const status = await orchestrator.getSystemStatus();
+        res.json(status);
+      } catch (error) {
+        res.status(500).json({ error: 'Errore nel recupero dello stato' });
+      }
+    });
+
+    // Avvia server HTTP su porta 3000
+    const WEB_PORT = 3000;
+    server.listen(WEB_PORT, () => {
+      console.log(`[WEB] Dashboard disponibile su: http://localhost:${WEB_PORT}`);
+      console.log(`      Apri il browser e vai a http://localhost:${WEB_PORT}\n`);
+    });
+
+    // 2. Setup WebSocket Server per aggiornamenti real-time
+    const wss = new WebSocketServer({ server });
+    console.log("🔌 WebSocket Server inizializzato\n");
+
+    // 3. Crea un unico servient per tutti i dispositivi WoT
+    const servient = new Servient();
+    servient.addServer(new HttpServer({ port: 8080 }));
+
+    // Servient per l'orchestratore (solo client)
+    const orchestratorServient = new Servient();
+
+    console.log("[MAIN] Inizializzazione Things...");
 
   // Tutti usano lo stesso servient
   const lightSensor = new LightSensorThing(servient, 8080);
@@ -31,18 +76,58 @@ async function main() {
 
   // Inizializza l'orchestratore
   console.log("[MAIN] Inizializzazione orchestratore...");
-  const orchestrator = new IrrigationOrchestrator(orchestratorServient);
+  orchestrator = new IrrigationOrchestrator(orchestratorServient);
   await orchestrator.init();
 
-  // Avvia il monitoraggio automatico
-  orchestrator.startMonitoring(5);
+  // 4. Gestione connessioni WebSocket
+  wss.on('connection', (ws: WebSocket) => {
+    orchestrator.addWebSocketClient(ws);
 
-  // Avvia le simulazioni
+    ws.on('message', async (message: string) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        switch (data.type) {
+          case 'updateConfig':
+            orchestrator.updateConfiguration(data.config);
+            break;
+          
+          case 'manualStart':
+            await orchestrator.manualIrrigation(data.duration || 30, data.flowRate || 15);
+            break;
+          
+          case 'manualStop':
+            await orchestrator.stopIrrigation();
+            break;
+          
+          case 'toggleAuto':
+            orchestrator.toggleAutoMode();
+            break;
+          
+          case 'getStatus':
+            const status = await orchestrator.getSystemStatus();
+            ws.send(JSON.stringify({ type: 'status', data: status }));
+            break;
+        }
+      } catch (error) {
+        console.error('Errore elaborazione messaggio WebSocket:', error);
+      }
+    });
+  });
+
+  // 5. Avvia le simulazioni
   lightSensor.startSimulation();
   humiditySensor.startSimulation();
 
-  // Connetti il sensore di umidità con l'orchestrator per simulazione realistica
-  orchestrator.setHumiditySensor(humiditySensor)
+  // 6. Connetti il sensore di umidità con l'orchestrator per simulazione realistica
+  orchestrator.setHumiditySensor(humiditySensor);
+
+  // 7. Avvia il monitoraggio automatico (ogni 5 secondi per aggiornamenti real-time)
+  orchestrator.startMonitoring(5);
+
+  console.log("\n============================================================");
+  console.log("   SISTEMA AVVIATO - Dashboard disponibile su porta 3000");
+  console.log("============================================================\n");
 
   console.log("\n--- COMANDI DISPONIBILI ---");
   console.log("  's' - Stato del sistema");
@@ -84,6 +169,8 @@ async function main() {
     orchestrator.stopMonitoring();
     lightSensor.stopSimulation();
     humiditySensor.stopSimulation();
+    wss.close();
+    server.close();
     await orchestrator.destroy();
     await lightSensor.destroy();
     await humiditySensor.destroy();
@@ -95,6 +182,10 @@ async function main() {
     await cleanup();
     process.exit(0);
   });
+  } catch (error) {
+    console.error("[ERROR] Errore fatale:", error);
+    process.exit(1);
+  }
 }
 
 main().catch((error) => {

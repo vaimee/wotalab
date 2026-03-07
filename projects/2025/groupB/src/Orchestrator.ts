@@ -1,5 +1,6 @@
 import { Servient } from "@node-wot/core";
 import { HttpClientFactory } from "@node-wot/binding-http";
+import { WebSocket } from "ws";
 
 export class IrrigationOrchestrator {
   private wot: any = null;
@@ -7,6 +8,9 @@ export class IrrigationOrchestrator {
   private humiditySensor: WoT.ConsumedThing | null = null;
   private pump: WoT.ConsumedThing | null = null;
   private humiditySensorThing: any = null; // Riferimento al sensore fisico per simulazione
+  
+  // WebSocket per comunicazione real-time con la dashboard
+  private wsClients: Set<WebSocket> = new Set();
   
   // Parametri del sistema di irrigazione
   private minSoilMoisture: number = 30;
@@ -34,6 +38,33 @@ export class IrrigationOrchestrator {
     this.humiditySensorThing = sensor;
   }
 
+  // Registra un client WebSocket per aggiornamenti real-time
+  addWebSocketClient(ws: WebSocket): void {
+    this.wsClients.add(ws);
+    console.log(`[WS] Client connesso (totale: ${this.wsClients.size})`);
+    
+    // Invia lo stato corrente al nuovo client
+    this.getSystemStatus().then(status => {
+      this.broadcastToClients({ type: 'status', data: status });
+      this.broadcastToClients({ type: 'history', data: this.dataHistory });
+    });
+
+    ws.on('close', () => {
+      this.wsClients.delete(ws);
+      console.log(`[WS] Client disconnesso (rimanenti: ${this.wsClients.size})`);
+    });
+  }
+
+  // Invia messaggio a tutti i client WebSocket connessi
+  private broadcastToClients(message: any): void {
+    const messageStr = JSON.stringify(message);
+    this.wsClients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(messageStr);
+      }
+    });
+  }
+
   // Permette di cambiare le soglie in corsa
   updateConfiguration(config: {
     minSoilMoisture?: number;
@@ -59,6 +90,11 @@ export class IrrigationOrchestrator {
     console.log(`   Umidità max: ${this.maxSoilMoisture}%`);
     console.log(`   Luce min: ${this.minLightForIrrigation} lux`);
     console.log(`   Modalità auto: ${this.isAutoMode ? "ATTIVA" : "DISATTIVA"}`);
+
+    // Notifica i client WebSocket della nuova configurazione
+    this.getSystemStatus().then(status => {
+      this.broadcastToClients({ type: 'configUpdate', data: status.config });
+    });
   }
 
   // Fornisce lo stato attuale (servirà sia per la CLI che per il Web)
@@ -258,6 +294,12 @@ export class IrrigationOrchestrator {
         duration: duration,
         flowRate: 15,
       });
+
+      // Notifica i client WebSocket
+      this.broadcastToClients({
+        type: 'irrigationStart',
+        data: { duration, flowRate: 15, automatic: true }
+      });
     } catch (error) {
       console.error("[ERROR] Errore durante l'avvio dell'irrigazione:", error);
     }
@@ -275,6 +317,12 @@ export class IrrigationOrchestrator {
       duration: duration,
       flowRate: flowRate,
     });
+
+    // Notifica i client WebSocket
+    this.broadcastToClients({
+      type: 'irrigationStart',
+      data: { duration, flowRate, automatic: false }
+    });
   }
   
   async stopIrrigation(): Promise<void> {
@@ -286,6 +334,12 @@ export class IrrigationOrchestrator {
     }
 
     await this.pump?.invokeAction("stopPump");
+
+    // Notifica i client WebSocket
+    this.broadcastToClients({
+      type: 'irrigationStop',
+      data: { manual: true }
+    });
   }
 
   startMonitoring(intervalSeconds: number = 5): void {
@@ -307,6 +361,11 @@ export class IrrigationOrchestrator {
   toggleAutoMode(): void {
     this.isAutoMode = !this.isAutoMode;
     console.log(`\n[ORCHESTRATOR] Modalità Automatica: ${this.isAutoMode ? 'ATTIVA' : 'DISATTIVATA'}`);
+
+    // Notifica i client WebSocket
+    this.getSystemStatus().then(status => {
+      this.broadcastToClients({ type: 'configUpdate', data: status.config });
+    });
   }
 
   async destroy(): Promise<void> {
