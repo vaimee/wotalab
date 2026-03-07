@@ -20,7 +20,7 @@ export function useWoT() {
       targetTemperatureHome: 22,
       targetTemperatureNight: 19,
       targetTemperatureEco: 18,
-      targetTemperatureVacation: 15
+      targetTemperatureAway: 15
     }
   });
 
@@ -41,7 +41,7 @@ export function useWoT() {
         pVal, lVal, tVal, hVal, wVal,
         lOn, lMode, lStatus,
         bOn, bMode, bStatus,
-        cMode, cAlarm, cReason, cTargetTempHome, cTargetTempNight, cTargetTempEco, cTargetTempVacation
+        cMode, cAlarm, cReason, cTargetTempHome, cTargetTempNight, cTargetTempEco, cTargetTempAway
       ] = await Promise.all([
         safeFetch('/api/presencesensor/properties/presence'),
         safeFetch('/api/lightsensor/properties/illuminanceLux'),
@@ -63,7 +63,7 @@ export function useWoT() {
         safeFetch('/api/housecontroller/properties/targetTemperatureHome'),
         safeFetch('/api/housecontroller/properties/targetTemperatureNight'),
         safeFetch('/api/housecontroller/properties/targetTemperatureEco'),
-        safeFetch('/api/housecontroller/properties/targetTemperatureVacation')
+        safeFetch('/api/housecontroller/properties/targetTemperatureAway')
       ]);
 
       data.value.sensors.presence.value = pVal;
@@ -86,7 +86,7 @@ export function useWoT() {
       data.value.controller.targetTemperatureHome = cTargetTempHome;
       data.value.controller.targetTemperatureNight = cTargetTempNight;
       data.value.controller.targetTemperatureEco = cTargetTempEco;
-      data.value.controller.targetTemperatureVacation = cTargetTempVacation;
+      data.value.controller.targetTemperatureAway = cTargetTempAway;
 
       loading.value = false;
       error.value = null;

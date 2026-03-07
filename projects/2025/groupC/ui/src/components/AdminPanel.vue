@@ -68,7 +68,7 @@ const updateSensor = (thing: string, prop: string, value: any) => {
           </div>
           <div class="mode-grid">
             <button 
-              v-for="mode in ['HOME', 'NIGHT', 'ECO', 'VACATION']" 
+              v-for="mode in ['HOME', 'NIGHT', 'ECO', 'AWAY']" 
               :key="mode"
               @click="setMode(mode)"
               :class="['mode-btn', { active: data.controller.currentMode === mode }]"
@@ -121,15 +121,15 @@ const updateSensor = (thing: string, prop: string, value: any) => {
             >
           </div>
 
-          <div v-if="data.controller.currentMode === 'VACATION'" class="override-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+          <div v-if="data.controller.currentMode === 'AWAY'" class="override-item" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; margin-bottom: 1.5rem;">
             <div class="label-row">
               <span class="label"><Thermometer :size="16" /> Target Temp (AWAY)</span>
-              <span class="value">{{ data.controller.targetTemperatureVacation?.toFixed(1) || '15.0' }}°C</span>
+              <span class="value">{{ data.controller.targetTemperatureAway?.toFixed(1) || '15.0' }}°C</span>
             </div>
             <input 
               type="range" min="10" max="40" step="0.5" 
-              :value="data.controller.targetTemperatureVacation ?? 15"
-              @input="(e: any) => updateSensor('housecontroller', 'targetTemperatureVacation', parseFloat(e.target.value))"
+              :value="data.controller.targetTemperatureAway ?? 15"
+              @input="(e: any) => updateSensor('housecontroller', 'targetTemperatureAway', parseFloat(e.target.value))"
             >
           </div>
 
@@ -141,7 +141,7 @@ const updateSensor = (thing: string, prop: string, value: any) => {
               :class="['toggle-btn', { active: data.sensors.presence.value }]"
             >
               <Users :size="18" />
-              {{ data.sensors.presence.value ? 'In Stanza' : 'Fuori' }}
+              {{ data.sensors.presence.value ? 'In Room' : 'Outside' }}
             </button>
 
             <button 
@@ -149,7 +149,7 @@ const updateSensor = (thing: string, prop: string, value: any) => {
               :class="['toggle-btn', { active: data.sensors.window.value }]"
             >
               <AppWindow :size="18" />
-              {{ data.sensors.window.value ? 'Finestra Aperta' : 'Chiusa' }}
+              {{ data.sensors.window.value ? 'Window Open' : 'Window Closed' }}
             </button>
           </div>
         </section>

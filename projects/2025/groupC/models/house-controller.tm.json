@@ -19,7 +19,7 @@
                 "HOME",
                 "NIGHT",
                 "ECO",
-                "VACATION"
+                "AWAY"
             ],
             "description": "Operation mode of the house",
             "readOnly": false
@@ -55,9 +55,9 @@
             "maximum": 40,
             "readOnly": false
         },
-        "targetTemperatureVacation": {
+        "targetTemperatureAway": {
             "type": "number",
-            "description": "Target temperature for the room during VACATION mode",
+            "description": "Target temperature for the room during AWAY mode",
             "minimum": 10,
             "maximum": 40,
             "readOnly": false
@@ -72,7 +72,7 @@
                     "HOME",
                     "NIGHT",
                     "ECO",
-                    "VACATION"
+                    "AWAY"
                 ]
             }
         },

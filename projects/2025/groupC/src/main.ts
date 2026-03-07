@@ -39,7 +39,7 @@ async function main() {
       const mode = controller.state.currentMode;
       if (mode === "NIGHT") return controller.state.targetTemperatureNight;
       if (mode === "ECO") return controller.state.targetTemperatureEco;
-      if (mode === "VACATION") return controller.state.targetTemperatureVacation;
+      if (mode === "AWAY") return controller.state.targetTemperatureAway;
       return controller.state.targetTemperatureHome;
     }
   );

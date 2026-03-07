@@ -5,14 +5,14 @@ type WoTLike = {
 };
 
 export type HouseControllerState = {
-  currentMode: "HOME" | "NIGHT" | "ECO" | "VACATION";
+  currentMode: "HOME" | "NIGHT" | "ECO" | "AWAY";
   alarmActive: boolean;
   alarmReason: string;
 
   targetTemperatureHome: number;
   targetTemperatureNight: number;
   targetTemperatureEco: number;
-  targetTemperatureVacation: number;
+  targetTemperatureAway: number;
 };
 
 export async function createHouseController(wot: WoTLike) {
@@ -27,7 +27,7 @@ export async function createHouseController(wot: WoTLike) {
     targetTemperatureHome: 22.0,
     targetTemperatureNight: 19.0,
     targetTemperatureEco: 18.0,
-    targetTemperatureVacation: 15.0,
+    targetTemperatureAway: 15.0,
   };
 
   thing.setPropertyReadHandler("currentMode", async () => state.currentMode);
@@ -55,9 +55,9 @@ export async function createHouseController(wot: WoTLike) {
     state.targetTemperatureEco = Number(await v.value());
   });
 
-  thing.setPropertyReadHandler("targetTemperatureVacation", async () => state.targetTemperatureVacation);
-  thing.setPropertyWriteHandler("targetTemperatureVacation", async (v: any) => {
-    state.targetTemperatureVacation = Number(await v.value());
+  thing.setPropertyReadHandler("targetTemperatureAway", async () => state.targetTemperatureAway);
+  thing.setPropertyWriteHandler("targetTemperatureAway", async (v: any) => {
+    state.targetTemperatureAway = Number(await v.value());
   });
 
   thing.setActionHandler("setMode", async (v: any) => {

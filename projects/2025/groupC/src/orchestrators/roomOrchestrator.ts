@@ -15,7 +15,7 @@ type HouseController = {
     targetTemperatureHome: number;
     targetTemperatureNight: number;
     targetTemperatureEco: number;
-    targetTemperatureVacation: number;
+    targetTemperatureAway: number;
   };
   triggerAlarm: (reason: string) => Promise<void>;
 };
@@ -47,13 +47,13 @@ export function startRoomOrchestrator(
   return every(intervalMs, async () => {
     const { currentMode } = deps.controller.state;
 
-    // --- LOGIC 1: SECURITY (VACATION MODE) ---
-    if (currentMode === "VACATION") {
+    // --- LOGIC 1: SECURITY (AWAY MODE) ---
+    if (currentMode === "AWAY") {
       if (deps.presence.state.presence && deps.presence.state.status === "online") {
-        await deps.controller.triggerAlarm("Intrusion: Movement detected while in VACATION mode!");
+        await deps.controller.triggerAlarm("Intrusion: Movement detected while in AWAY mode!");
       }
       if (deps.windowS.state.isOpen && deps.windowS.state.status === "online") {
-        await deps.controller.triggerAlarm("Intrusion: Window opened while in VACATION mode!");
+        await deps.controller.triggerAlarm("Intrusion: Window opened while in AWAY mode!");
       }
     }
 
@@ -63,8 +63,8 @@ export function startRoomOrchestrator(
       targetTemp = deps.controller.state.targetTemperatureNight ?? 19;
     } else if (currentMode === "ECO") {
       targetTemp = deps.controller.state.targetTemperatureEco ?? 18;
-    } else if (currentMode === "VACATION") {
-      targetTemp = deps.controller.state.targetTemperatureVacation ?? 15;
+    } else if (currentMode === "AWAY") {
+      targetTemp = deps.controller.state.targetTemperatureAway ?? 15;
     }
 
     let tOn = targetTemp - 0.5;
@@ -78,8 +78,8 @@ export function startRoomOrchestrator(
       const luxOn = opts.luxOnThreshold ?? 200;
       const luxOff = opts.luxOffThreshold ?? 260;
 
-      // In VACATION or ECO, we might want lights always OFF unless alarm
-      if (currentMode === "VACATION" || currentMode === "ECO" || !presenceOk) {
+      // In AWAY or ECO, we might want lights always OFF unless alarm
+      if (currentMode === "AWAY" || currentMode === "ECO" || !presenceOk) {
         if (deps.lightActuator.state.isOn) await deps.lightActuator.setRelay(false);
       } else {
         if (lux < luxOn && !deps.lightActuator.state.isOn) {
@@ -95,7 +95,7 @@ export function startRoomOrchestrator(
       const windowOpen = deps.windowS.state.status === "online" && deps.windowS.state.isOpen;
       const temp = deps.th.state.status === "online" ? deps.th.state.temperature : 99;
 
-      if (windowOpen || currentMode === "VACATION") {
+      if (windowOpen || currentMode === "AWAY") {
         // Stop heating if window is open or we are away
         if (deps.boilerActuator.state.isOn) await deps.boilerActuator.setRelay(false);
       } else {
