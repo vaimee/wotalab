@@ -10,7 +10,7 @@ export type RelayState = {
   status: "online" | "offline" | "error";
 };
 
-export async function createRelayActuator(wot: WoTLike, modelName: string = "relay-actuator.tm.json") {
+export async function createRelayActuator(wot: WoTLike, modelName: string) {
   const td = loadTdJson(modelName);
   const thing = await wot.produce(td);
 

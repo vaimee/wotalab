@@ -3,7 +3,7 @@ import { every } from "../utils/sim.js";
 type Presence = { state: { presence: boolean; status: string } };
 type WindowS = { state: { isOpen: boolean; status: string } };
 type Light = { state: { illuminanceLux: number; status: string } };
-type TH = { state: { temperature: number; humidityPct: number; status: string } };
+type TH = { state: { temperature: number; status: string } };
 type Relay = {
   state: { isOn: boolean; mode: "manual" | "auto"; status: string };
   setRelay: (v: boolean) => Promise<boolean> | boolean;
@@ -20,7 +20,7 @@ export type OrchestratorDeps = {
   th: TH;
   lightActuator: Relay;
   boilerActuator: Relay;
-  controller: HouseController; // New dependency
+  controller: HouseController;
 };
 
 export type OrchestratorOptions = {
@@ -50,7 +50,7 @@ export function startRoomOrchestrator(
       }
     }
 
-    // --- LOGIC 3: ECO SAVINGS ---
+    // --- LOGIC 2: CLIMATE & ECO SAVINGS ---
     // Change thresholds based on mode
     let tOn = opts.tempOnThreshold ?? 19;
     let tOff = opts.tempOffThreshold ?? 22;
