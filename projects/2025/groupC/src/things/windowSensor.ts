@@ -10,7 +10,7 @@ export type WindowState = {
   status: "online" | "offline" | "error";
 };
 
-export async function createWindowSensor(wot: WoTLike, getSimulationEnabled: () => boolean) {
+export async function createWindowSensor(wot: WoTLike) {
   const td = loadTdJson("window-sensor.tm.json");
   const thing = await wot.produce(td);
 
@@ -46,7 +46,7 @@ export async function createWindowSensor(wot: WoTLike, getSimulationEnabled: () 
   const stopSim = startWindowSimulation({
     getIsOpen: () => state.isOpen,
     getStatus: () => state.status,
-    getSimulationEnabled,
+
     setIsOpen,
   });
 
@@ -56,5 +56,5 @@ export async function createWindowSensor(wot: WoTLike, getSimulationEnabled: () 
 async function safeWrite(thing: any, name: string, value: unknown) {
   try {
     await thing.writeProperty(name, value);
-  } catch {}
+  } catch { }
 }

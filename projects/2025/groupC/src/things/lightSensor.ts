@@ -10,7 +10,11 @@ export type LightState = {
   status: "online" | "offline" | "error";
 };
 
-export async function createLightSensor(wot: WoTLike, getSimulationEnabled: () => boolean) {
+export async function createLightSensor(
+  wot: WoTLike,
+  getLightActuatorState: () => boolean,
+  getWindowState: () => boolean
+) {
   const td = loadTdJson("light-sensor.tm.json");
   const thing = await wot.produce(td);
 
@@ -46,7 +50,8 @@ export async function createLightSensor(wot: WoTLike, getSimulationEnabled: () =
   const stopSim = startLightSimulation({
     getLux: () => state.illuminanceLux,
     getStatus: () => state.status,
-    getSimulationEnabled,
+    getLightActuatorState,
+    getWindowState,
     setLux: setIlluminanceLux,
   });
 
@@ -56,5 +61,5 @@ export async function createLightSensor(wot: WoTLike, getSimulationEnabled: () =
 async function safeWrite(thing: any, name: string, value: unknown) {
   try {
     await thing.writeProperty(name, value);
-  } catch {}
+  } catch { }
 }

@@ -11,7 +11,12 @@ export type TempHumidityState = {
   status: "online" | "offline" | "error";
 };
 
-export async function createTempHumiditySensor(wot: WoTLike, getSimulationEnabled: () => boolean) {
+export async function createTempHumiditySensor(
+  wot: WoTLike,
+  getBoilerState: () => boolean,
+  getWindowState: () => boolean,
+  getTargetTemp: () => number
+) {
   const td = loadTdJson("temp-humidity.tm.json");
   const thing = await wot.produce(td);
 
@@ -68,7 +73,9 @@ export async function createTempHumiditySensor(wot: WoTLike, getSimulationEnable
     getTemperature: () => state.temperature,
     getHumidity: () => state.humidityPct,
     getStatus: () => state.status,
-    getSimulationEnabled,
+    getBoilerState,
+    getWindowState,
+    getTargetTemp,
     setTempHumidity,
   });
 
@@ -86,5 +93,5 @@ export async function createTempHumiditySensor(wot: WoTLike, getSimulationEnable
 async function safeWrite(thing: any, name: string, value: unknown) {
   try {
     await thing.writeProperty(name, value);
-  } catch {}
+  } catch { }
 }

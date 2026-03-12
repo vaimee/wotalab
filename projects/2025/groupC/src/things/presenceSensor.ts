@@ -10,7 +10,7 @@ export type PresenceState = {
   status: "online" | "offline" | "error";
 };
 
-export async function createPresenceSensor(wot: WoTLike, getSimulationEnabled: () => boolean) {
+export async function createPresenceSensor(wot: WoTLike) {
   const td = loadTdJson("presence-sensor.tm.json");
   const thing = await wot.produce(td);
 
@@ -46,7 +46,7 @@ export async function createPresenceSensor(wot: WoTLike, getSimulationEnabled: (
   const stopSim = startPresenceSimulation({
     getPresence: () => state.presence,
     getStatus: () => state.status,
-    getSimulationEnabled,
+
     setPresence,
   });
 
@@ -56,5 +56,5 @@ export async function createPresenceSensor(wot: WoTLike, getSimulationEnabled: (
 async function safeWrite(thing: any, name: string, value: unknown) {
   try {
     await thing.writeProperty(name, value);
-  } catch {}
+  } catch { }
 }

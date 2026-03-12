@@ -5,10 +5,14 @@ type WoTLike = {
 };
 
 export type HouseControllerState = {
-  currentMode: "HOME" | "NIGHT" | "ECO" | "VACATION";
+  currentMode: "HOME" | "NIGHT" | "ECO" | "AWAY";
   alarmActive: boolean;
   alarmReason: string;
-  simulationEnabled: boolean;
+
+  targetTemperatureHome: number;
+  targetTemperatureNight: number;
+  targetTemperatureEco: number;
+  targetTemperatureAway: number;
 };
 
 export async function createHouseController(wot: WoTLike) {
@@ -19,7 +23,11 @@ export async function createHouseController(wot: WoTLike) {
     currentMode: "HOME",
     alarmActive: false,
     alarmReason: "Everything is OK",
-    simulationEnabled: true,
+
+    targetTemperatureHome: 22.0,
+    targetTemperatureNight: 19.0,
+    targetTemperatureEco: 18.0,
+    targetTemperatureAway: 15.0,
   };
 
   thing.setPropertyReadHandler("currentMode", async () => state.currentMode);
@@ -30,9 +38,26 @@ export async function createHouseController(wot: WoTLike) {
   thing.setPropertyReadHandler("alarmActive", async () => state.alarmActive);
   thing.setPropertyReadHandler("alarmReason", async () => state.alarmReason);
 
-  thing.setPropertyReadHandler("simulationEnabled", async () => state.simulationEnabled);
-  thing.setPropertyWriteHandler("simulationEnabled", async (v: any) => {
-    state.simulationEnabled = Boolean(await v.value());
+
+
+  thing.setPropertyReadHandler("targetTemperatureHome", async () => state.targetTemperatureHome);
+  thing.setPropertyWriteHandler("targetTemperatureHome", async (v: any) => {
+    state.targetTemperatureHome = Number(await v.value());
+  });
+
+  thing.setPropertyReadHandler("targetTemperatureNight", async () => state.targetTemperatureNight);
+  thing.setPropertyWriteHandler("targetTemperatureNight", async (v: any) => {
+    state.targetTemperatureNight = Number(await v.value());
+  });
+
+  thing.setPropertyReadHandler("targetTemperatureEco", async () => state.targetTemperatureEco);
+  thing.setPropertyWriteHandler("targetTemperatureEco", async (v: any) => {
+    state.targetTemperatureEco = Number(await v.value());
+  });
+
+  thing.setPropertyReadHandler("targetTemperatureAway", async () => state.targetTemperatureAway);
+  thing.setPropertyWriteHandler("targetTemperatureAway", async (v: any) => {
+    state.targetTemperatureAway = Number(await v.value());
   });
 
   thing.setActionHandler("setMode", async (v: any) => {
@@ -50,9 +75,9 @@ export async function createHouseController(wot: WoTLike) {
     if (!state.alarmActive) {
       state.alarmActive = true;
       state.alarmReason = reason;
-      thing.emitEvent("alarmTriggered", { 
-        reason, 
-        timestamp: new Date().toISOString() 
+      thing.emitEvent("alarmTriggered", {
+        reason,
+        timestamp: new Date().toISOString()
       });
       console.warn("ALARM TRIGGERED:", reason);
     }

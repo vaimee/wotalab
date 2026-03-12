@@ -37,7 +37,7 @@ const modes = [
   { id: 'HOME', name: 'Home', icon: Home, color: '#38bdf8' },
   { id: 'NIGHT', name: 'Night', icon: Moon, color: '#818cf8' },
   { id: 'ECO', name: 'Eco', icon: Leaf, color: '#10b981' },
-  { id: 'VACATION', name: 'Away', icon: Plane, color: '#fb7185' },
+  { id: 'AWAY', name: 'Away', icon: Plane, color: '#fb7185' },
 ];
 </script>
 
@@ -49,7 +49,7 @@ const modes = [
         <div class="alarm-content">
           <ShieldAlert class="pulse" />
           <div class="alarm-text">
-            <strong>SICUREZZA: INTRUSIONE RILEVATA!</strong>
+            <strong>SECURITY: INTRUSION DETECTED!</strong>
             <span>{{ data.controller.alarmReason }}</span>
           </div>
         </div>
@@ -67,18 +67,17 @@ const modes = [
             <Settings />
           </button>
         </div>
-        <p class="subtitle">IoT & Web of Things Control System</p>
       </header>
 
       <div v-if="loading" class="state-msg">
         <div class="spinner"></div>
-        <p>Connessione al sistema WoT...</p>
+        <p>Connecting to WoT system...</p>
       </div>
 
       <div v-else-if="error" class="state-msg error">
         <AlertCircle :size="48" />
-        <p>Errore di connessione: {{ error }}</p>
-        <button @click="refresh()" class="btn btn-outline">Riprova</button>
+        <p>Connection error: {{ error }}</p>
+        <button @click="refresh()" class="btn btn-outline">Retry</button>
       </div>
 
       <div v-else>
@@ -98,7 +97,7 @@ const modes = [
 
         <div class="dashboard-grid">
           <SensorCard 
-            title="Temperatura" 
+            title="Temperature" 
             :value="data.sensors.temp.value.toFixed(1)" 
             unit="°C" 
             :icon="Thermometer" 
@@ -107,7 +106,7 @@ const modes = [
           />
           
           <SensorCard 
-            title="Umidità" 
+            title="Humidity" 
             :value="data.sensors.hum.value.toFixed(0)" 
             unit="%" 
             :icon="Droplets" 
@@ -116,7 +115,7 @@ const modes = [
           />
 
           <SensorCard 
-            title="Luminosità" 
+            title="Brightness" 
             :value="Math.round(data.sensors.light.value)" 
             unit="lux" 
             :icon="Sun" 
@@ -125,23 +124,23 @@ const modes = [
           />
 
           <SensorCard 
-            title="Presenza" 
-            :value="data.sensors.presence.value ? 'Rilevata' : 'Assente'" 
+            title="Presence" 
+            :value="data.sensors.presence.value ? 'Detected' : 'Absent'" 
             :icon="Users" 
             :status="data.sensors.presence.status"
             :color="data.sensors.presence.value ? '#10b981' : '#94a3b8'"
           />
 
           <SensorCard 
-            title="Finestra" 
-            :value="data.sensors.window.value ? 'Aperta' : 'Chiusa'" 
+            title="Window" 
+            :value="data.sensors.window.value ? 'Open' : 'Closed'" 
             :icon="AppWindow" 
             :status="data.sensors.window.status"
             :color="data.sensors.window.value ? '#fb7185' : '#38bdf8'"
           />
 
           <RelayControl 
-            title="Luce Smart"
+            title="Smart Light"
             :isOn="data.actuators.light.isOn" 
             :mode="data.actuators.light.mode" 
             :status="data.actuators.light.status"
@@ -150,7 +149,7 @@ const modes = [
           />
 
           <RelayControl 
-            title="Caldaia (Boiler)"
+            title="Boiler"
             :isOn="data.actuators.boiler.isOn" 
             :mode="data.actuators.boiler.mode" 
             :status="data.actuators.boiler.status"
