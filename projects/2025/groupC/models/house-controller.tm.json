@@ -1,6 +1,10 @@
 {
     "@context": [
-        "https://www.w3.org/2019/wot/td/v1"
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "smart": "http://example.org/smart-room#"
+        }
     ],
     "title": "houseController",
     "securityDefinitions": {

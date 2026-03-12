@@ -5,7 +5,8 @@
             "saref": "https://saref.etsi.org/core/",
             "sosa": "http://www.w3.org/ns/sosa/",
             "qudt": "http://qudt.org/schema/qudt/",
-            "unit": "http://qudt.org/vocab/unit/"
+            "unit": "http://qudt.org/vocab/unit/",
+            "smart": "http://example.org/smart-room#"
         }
     ],
     "@type": [

@@ -3,11 +3,13 @@
         "https://www.w3.org/2019/wot/td/v1",
         {
             "saref": "https://saref.etsi.org/core/",
-            "sosa": "http://www.w3.org/ns/sosa/"
+            "sosa": "http://www.w3.org/ns/sosa/",
+            "smart": "http://example.org/smart-room#"
         }
     ],
     "@type": [
-        "sosa:Sensor"
+        "sosa:Sensor",
+        "smart:Window"
     ],
     "title": "windowSensor",
     "description": "Window open/closed sensor for a smart room",
