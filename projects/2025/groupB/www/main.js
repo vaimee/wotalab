@@ -7,6 +7,7 @@
 const WS_URL = 'ws://localhost:3000';
 let ws = null;
 let reconnectInterval = null;
+let pumpStatusInterval = null;
 
 // Stato dell'applicazione
 let appState = {
@@ -226,9 +227,11 @@ function updatePumpDisplay(pumpData) {
     const isPumping = pumpData.isPumping || false;
     const flowRate = pumpData.flowRate || 0;
     const totalWater = pumpData.totalWaterUsed || 0;
+    const runtimeSeconds = pumpData.currentRunTimeSeconds || 0;
     
     document.getElementById('flow-rate').textContent = flowRate.toFixed(1);
     document.getElementById('total-water').textContent = totalWater.toFixed(2);
+    document.getElementById('pump-runtime').textContent = formatDuration(runtimeSeconds);
     
     const pumpIcon = document.getElementById('pump-icon');
     const pumpStatusText = document.getElementById('pump-status-text');
@@ -251,6 +254,14 @@ function updatePumpDisplay(pumpData) {
         
         startBtn.disabled = true;
         stopBtn.disabled = false;
+
+        if (!pumpStatusInterval) {
+            pumpStatusInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'getStatus' }));
+                }
+            }, 1000);
+        }
         
         console.log('🚨💦 POMPA ATTIVA - Visualizzazione aggiornata');
     } else {
@@ -269,6 +280,11 @@ function updatePumpDisplay(pumpData) {
         
         startBtn.disabled = false;
         stopBtn.disabled = true;
+
+        if (pumpStatusInterval) {
+            clearInterval(pumpStatusInterval);
+            pumpStatusInterval = null;
+        }
     }
     
     // IMPORTANTE: Aggiorna la visualizzazione canvas
@@ -807,6 +823,13 @@ function updateStatistics() {
         ? Math.min(100, ((waterSaved / (appState.irrigationsCount * 50)) * 100))
         : 100;
     document.getElementById('efficiency').textContent = efficiency.toFixed(0) + '%';
+}
+
+function formatDuration(totalSeconds) {
+    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+    const minutes = Math.floor(safeSeconds / 60);
+    const seconds = safeSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function addLogEntry(message, type = 'info') {
