@@ -120,6 +120,12 @@ export class IrrigationOrchestrator {
     const totalWaterUsedData = await this.pump?.readProperty("totalWaterUsed");
     const totalWaterUsed = await totalWaterUsedData?.value();
 
+    const statusData = await this.pump?.readProperty("status");
+    const status = await statusData?.value();
+
+    const currentRunTimeData = await this.pump?.readProperty("currentRunTimeSeconds");
+    const currentRunTimeSeconds = await currentRunTimeData?.value();
+
     return {
       sensors: {
         soilMoisture,
@@ -131,6 +137,8 @@ export class IrrigationOrchestrator {
         isPumping,
         flowRate,
         totalWaterUsed,
+        status,
+        currentRunTimeSeconds,
       },
       config: {
         isAutoMode: this.isAutoMode,
@@ -298,7 +306,7 @@ export class IrrigationOrchestrator {
       // Notifica i client WebSocket
       this.broadcastToClients({
         type: 'irrigationStart',
-        data: { duration, flowRate: 15, automatic: true }
+        data: { duration, flowRate: 15, reason: 'automatic' }
       });
     } catch (error) {
       console.error("[ERROR] Errore durante l'avvio dell'irrigazione:", error);
@@ -321,7 +329,7 @@ export class IrrigationOrchestrator {
     // Notifica i client WebSocket
     this.broadcastToClients({
       type: 'irrigationStart',
-      data: { duration, flowRate, automatic: false }
+      data: { duration, flowRate, reason: 'manual' }
     });
   }
   
@@ -338,7 +346,7 @@ export class IrrigationOrchestrator {
     // Notifica i client WebSocket
     this.broadcastToClients({
       type: 'irrigationStop',
-      data: { manual: true }
+      data: { reason: 'manual' }
     });
   }
 

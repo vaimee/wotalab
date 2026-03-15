@@ -46,6 +46,15 @@
       "type": "string",
       "enum": ["idle", "pumping", "error"],
       "readOnly": true
+    },
+    "currentRunTimeSeconds": {
+      "title": "Tempo di Erogazione Corrente",
+      "description": "Tempo di funzionamento della pompa nell'erogazione corrente",
+      "type": "number",
+      "minimum": 0,
+      "unit": "s",
+      "readOnly": true,
+      "observable": true
     }
   },
   "actions": {
