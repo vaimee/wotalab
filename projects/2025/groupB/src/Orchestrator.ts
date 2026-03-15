@@ -226,6 +226,18 @@ export class IrrigationOrchestrator {
         isPumping
       });
 
+      this.broadcastToClients({
+        type: 'sensorUpdate',
+        data: {
+          soilMoisture,
+          temperature,
+          luminosity,
+          simulatedTime,
+          isPumping,
+          timestamp: Date.now(),
+        }
+      });
+
       // Log stato attuale
       const now = new Date().toLocaleTimeString('it-IT');
       // Formattazione allineata con icone per lettura rapida

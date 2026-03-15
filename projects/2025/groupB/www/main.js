@@ -142,6 +142,7 @@ function updateFullStatus(status) {
             soilMoisture: status.sensors.soilMoisture,
             temperature: status.sensors.temperature,
             luminosity: status.sensors.luminosity,
+            simulatedTime: status.sensors.simulatedTime,
             isPumping: status.pump?.isPumping || false
         });
     }
