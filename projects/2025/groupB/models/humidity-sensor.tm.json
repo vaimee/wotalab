@@ -1,0 +1,117 @@
+{
+  "@context": [
+    "https://www.w3.org/2019/wot/td/v1",
+    {
+      "@language": "it"
+    }
+  ],
+  "id": "urn:dev:wot:humidity-sensor",
+  "title": "humidity-sensor",
+  "description": "Sensore per il monitoraggio dell'umidità del suolo e temperatura",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": "nosec_sc",
+  "properties": {
+    "soilMoisture": {
+      "title": "Umidità del Terreno",
+      "description": "Percentuale di umidità nel terreno",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "%",
+      "readOnly": true,
+      "observable": true,
+      "forms": [
+        {
+          "op": "readproperty",
+          "href": "/properties/soilMoisture",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "temperature": {
+      "title": "Temperatura",
+      "description": "Temperatura ambiente",
+      "type": "number",
+      "minimum": -10,
+      "maximum": 50,
+      "unit": "°C",
+      "readOnly": true,
+      "observable": true,
+      "forms": [
+        {
+          "op": "readproperty",
+          "href": "/properties/temperature",
+          "contentType": "application/json"
+        }
+      ]
+    },
+    "status": {
+      "title": "Stato",
+      "description": "Stato operativo del sensore",
+      "type": "string",
+      "enum": ["online", "offline", "error"],
+      "readOnly": true,
+      "forms": [
+        {
+          "op": "readproperty",
+          "href": "/properties/status",
+          "contentType": "application/json"
+        }
+      ]
+    }
+  },
+  "events": {
+    "drySoil": {
+      "title": "Terreno Secco",
+      "description": "Evento emesso quando l'umidità del terreno scende sotto la soglia",
+      "data": {
+        "type": "object",
+        "properties": {
+          "soilMoisture": {
+            "type": "number"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "forms": [
+        {
+          "href": "http://localhost:8082/humidity-sensor/events/drySoil"
+        }
+      ]
+    },
+    "wetSoil": {
+      "title": "Terreno Umido",
+      "description": "Evento emesso quando l'umidità del terreno supera la soglia",
+      "data": {
+        "type": "object",
+        "properties": {
+          "soilMoisture": {
+            "type": "number"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "forms": [
+        {
+          "href": "http://localhost:8082/humidity-sensor/events/wetSoil"
+        }
+      ]
+    }
+  }
+}

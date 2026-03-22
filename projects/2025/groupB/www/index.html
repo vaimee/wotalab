@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema di Irrigazione Intelligente - Dashboard</title>
+    <link rel="stylesheet" href="www/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌱 Sistema di Irrigazione Intelligente</h1>
+            <p class="subtitle">Dashboard di monitoraggio e controllo - Web of Things</p>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item" id="connection-status">
+                <span class="status-icon">🔗</span>
+                <span id="connection-text">Connessione in corso...</span>
+            </div>
+            <div class="status-item">
+                <span class="status-icon">🕐</span>
+                <span style="font-size: 0.85rem; opacity: 0.8; margin-right: 8px;">Ora Simulata:</span>
+                <span id="current-time" style="font-weight: bold;">--:--</span>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Sensore Umidità -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>💧 Sensore Umidità Terreno</h2>
+                    <span class="sensor-status" id="humidity-status">●</span>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-value-large">
+                        <span id="soil-moisture">--</span>
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="moisture-progress"></div>
+                    </div>
+                    <div class="sensor-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Temperatura:</span>
+                            <span id="temperature">--</span>°C
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Stato:</span>
+                            <span id="humidity-state">--</span>
+                        </div>
+                    </div>
+                    <div class="threshold-info">
+                        <div>Min: 35% | Max: 70%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sensore Luminosità -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>☀️ Sensore Luminosità</h2>
+                    <span class="sensor-status" id="light-status">●</span>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-value-large">
+                        <span id="luminosity">--</span>
+                        <span class="unit">lux</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-light" id="light-progress"></div>
+                    </div>
+                    <div class="sensor-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Condizione:</span>
+                            <span id="light-condition">--</span>
+                        </div>
+                    </div>
+                    <div class="threshold-info">
+                        <div>Min per irrigazione: 3000 lux</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pompa Irrigazione -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>🚰 Pompa Irrigazione</h2>
+                    <span class="sensor-status" id="pump-status">●</span>
+                </div>
+                <div class="card-body">
+                    <div class="pump-state">
+                        <div class="pump-icon" id="pump-icon">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v20M6 8l6-6 6 6M6 16l6 6 6-6"></path>
+                            </svg>
+                        </div>
+                        <div class="pump-status-text" id="pump-status-text">In Attesa</div>
+                    </div>
+                    <div class="sensor-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Portata:</span>
+                            <span id="flow-rate">--</span> L/min
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Tempo Attuale:</span>
+                            <span id="pump-runtime">00:00</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Acqua Totale:</span>
+                            <span id="total-water">--</span> L
+                        </div>
+                    </div>
+                    <div class="control-buttons">
+                        <button class="btn btn-primary" id="manual-start-btn">
+                            ▶️ Avvio Manuale
+                        </button>
+                        <button class="btn btn-danger" id="manual-stop-btn" disabled>
+                            ⏹️ Stop
+                        </button>
+                    </div>
+                    <div class="pump-controls">
+                        <label class="control-label">
+                            Durata (secondi):
+                            <input type="number" id="duration-input" value="30" min="5" max="120" class="input-control">
+                        </label>
+                        <label class="control-label">
+                            Portata (L/min):
+                            <input type="number" id="flow-rate-input" value="15" min="5" max="30" step="0.5" class="input-control">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pannello Configurazione Sistema -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>⚙️ Configurazione Sistema</h2>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-mode-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="card-body">
+                    <div class="config-section">
+                        <div class="config-item">
+                            <label class="config-label">
+                                <span class="label-icon">📉</span>
+                                Umidità Minima (%):
+                                <input type="number" id="min-moisture-input" value="35" min="0" max="100" class="input-control">
+                            </label>
+                        </div>
+                        <div class="config-item">
+                            <label class="config-label">
+                                <span class="label-icon">📈</span>
+                                Umidità Massima (%):
+                                <input type="number" id="max-moisture-input" value="70" min="0" max="100" class="input-control">
+                            </label>
+                        </div>
+                        <div class="config-item">
+                            <label class="config-label">
+                                <span class="label-icon">☀️</span>
+                                Luminosità Minima (lux):
+                                <input type="number" id="min-light-input" value="3000" min="0" max="100000" step="100" class="input-control">
+                            </label>
+                        </div>
+                        <div class="config-item">
+                            <div class="auto-mode-indicator">
+                                <span id="auto-mode-text">Modalità Automatica: ATTIVA</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-success btn-block" id="save-config-btn">
+                            💾 Salva Configurazione
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grafico Storico -->
+            <div class="card card-wide">
+                <div class="card-header">
+                    <h2>📈 Grafico Storico Dati</h2>
+                    <div class="chart-controls">
+                        <label class="chart-toggle">
+                            <input type="checkbox" id="show-moisture" checked> Umidità
+                        </label>
+                        <label class="chart-toggle">
+                            <input type="checkbox" id="show-temperature" checked> Temperatura
+                        </label>
+                        <label class="chart-toggle">
+                            <input type="checkbox" id="show-luminosity" checked> Luminosità
+                        </label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="history-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Visualizzazione 2D del Sistema -->
+            <div class="card card-wide">
+                <div class="card-header">
+                    <h2>🎨 Visualizzazione Sistema</h2>
+                </div>
+                <div class="card-body">
+                    <div class="visualization">
+                        <canvas id="system-canvas" width="800" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registro Eventi -->
+            <div class="card card-wide">
+                <div class="card-header">
+                    <h2>📋 Registro Eventi</h2>
+                    <button class="btn btn-small" id="clear-log-btn">Pulisci</button>
+                </div>
+                <div class="card-body">
+                    <div class="event-log" id="event-log">
+                        <div class="log-entry">Sistema in attesa di dati...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiche e Info Sistema - Layout 1:2 -->
+            <div class="card card-stats">
+                <div class="card-header">
+                    <h2>📊 Statistiche</h2>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Irrigazioni Oggi</div>
+                            <div class="stat-value" id="irrigations-count">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Acqua Risparmiata</div>
+                            <div class="stat-value" id="water-saved">0 L</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Efficienza</div>
+                            <div class="stat-value" id="efficiency">100%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Uptime</div>
+                            <div class="stat-value" id="uptime">0h 0m</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pannello Informativo -->
+            <div class="card card-info">
+                <div class="card-header">
+                    <h2>💡 Info Sistema</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-section">
+                        <div class="info-item">
+                            <div class="info-title">💧 Acqua Risparmiata</div>
+                            <div class="info-text">
+                                Calcolo: <code>(Irrigazioni × 50L) - Acqua Usata</code><br>
+                                Stima acqua che sarebbe stata usata con irrigazione tradizionale (50L per ciclo) meno l'acqua effettivamente utilizzata dal sistema intelligente.
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-title">📊 Efficienza</div>
+                            <div class="info-text">
+                                Calcolo: <code>(Acqua Risparmiata / Totale Stimato) × 100%</code><br>
+                                Percentuale di risparmio idrico rispetto a un sistema tradizionale senza controllo intelligente.
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-title">✅ Condizioni Ottimali</div>
+                            <div class="info-text">
+                                <strong>Irrigazione automatica parte quando:</strong><br>
+                                • Umidità terreno &lt; Min configurata (default 35%)<br>
+                                • Luminosità ≥ Min configurata (default 3000 lux)<br>
+                                <strong>Irrigazione si ferma quando:</strong><br>
+                                • Umidità terreno ≥ Max configurata (default 70%)<br>
+                                • Manuale: pressione tasto Stop o timeout
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Sistema di Irrigazione Intelligente basato su Web of Things (WoT)</p>
+            <p>Laboratorio Piattaforme e Sviluppo per l'Automazione</p>
+        </footer>
+    </div>
+
+    <script src="www/main.js"></script>
+</body>
+</html>

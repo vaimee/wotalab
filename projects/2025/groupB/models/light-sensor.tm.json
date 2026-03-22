@@ -1,0 +1,82 @@
+{
+  "@context": [
+    "https://www.w3.org/2019/wot/td/v1",
+    {
+      "@language": "it"
+    }
+  ],
+  "id": "urn:dev:wot:light-sensor",
+  "title": "light-sensor",
+  "description": "Sensore per il monitoraggio della luminosità ambientale",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": "nosec_sc",
+  "properties": {
+    "luminosity": {
+      "title": "Luminosità",
+      "description": "Livello di luminosità ambientale in lux",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100000,
+      "unit": "lux",
+      "readOnly": true,
+      "observable": true
+    },
+    "status": {
+      "title": "Stato",
+      "description": "Stato operativo del sensore",
+      "type": "string",
+      "enum": ["online", "offline", "error"],
+      "readOnly": true
+    },
+    "simulatedTime": {
+      "title": "Ora Simulata",
+      "description": "Ora simulata del giorno (ciclo 24h accelerato)",
+      "type": "string",
+      "readOnly": true
+    }
+  },
+  "events": {
+    "lowLight": {
+      "title": "Luce Bassa",
+      "description": "Evento emesso quando la luminosità scende sotto la soglia",
+      "data": {
+        "type": "object",
+        "properties": {
+          "luminosity": {
+            "type": "number"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "highLight": {
+      "title": "Luce Alta",
+      "description": "Evento emesso quando la luminosità supera la soglia",
+      "data": {
+        "type": "object",
+        "properties": {
+          "luminosity": {
+            "type": "number"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

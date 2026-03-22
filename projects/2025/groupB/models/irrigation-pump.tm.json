@@ -1,0 +1,124 @@
+{
+  "@context": [
+    "https://www.w3.org/2019/wot/td/v1",
+    {
+      "@language": "it"
+    }
+  ],
+  "id": "urn:dev:wot:irrigation-pump",
+  "title": "irrigation-pump",
+  "description": "Pompa per il controllo automatico dell'irrigazione",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": "nosec_sc",
+  "properties": {
+    "isPumping": {
+      "title": "In Funzione",
+      "description": "Indica se la pompa è attualmente in funzione",
+      "type": "boolean",
+      "readOnly": true,
+      "observable": true
+    },
+    "flowRate": {
+      "title": "Portata",
+      "description": "Portata dell'acqua in litri al minuto",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 50,
+      "unit": "L/min",
+      "readOnly": false
+    },
+    "totalWaterUsed": {
+      "title": "Acqua Totale Utilizzata",
+      "description": "Quantità totale di acqua utilizzata in litri",
+      "type": "number",
+      "minimum": 0,
+      "unit": "L",
+      "readOnly": true,
+      "observable": true
+    },
+    "status": {
+      "title": "Stato",
+      "description": "Stato operativo della pompa",
+      "type": "string",
+      "enum": ["idle", "pumping", "error"],
+      "readOnly": true
+    },
+    "currentRunTimeSeconds": {
+      "title": "Tempo di Erogazione Corrente",
+      "description": "Tempo di funzionamento della pompa nell'erogazione corrente",
+      "type": "number",
+      "minimum": 0,
+      "unit": "s",
+      "readOnly": true,
+      "observable": true
+    }
+  },
+  "actions": {
+    "startPump": {
+      "title": "Avvia Pompa",
+      "description": "Avvia la pompa di irrigazione",
+      "input": {
+        "type": "object",
+        "properties": {
+          "duration": {
+            "type": "number",
+            "description": "Durata dell'irrigazione in secondi (0 = continuo)",
+            "minimum": 0
+          },
+          "flowRate": {
+            "type": "number",
+            "description": "Portata desiderata in L/min",
+            "minimum": 1,
+            "maximum": 50
+          }
+        }
+      }
+    },
+    "stopPump": {
+      "title": "Ferma Pompa",
+      "description": "Ferma la pompa di irrigazione"
+    },
+    "resetCounter": {
+      "title": "Resetta Contatore",
+      "description": "Resetta il contatore dell'acqua utilizzata"
+    }
+  },
+  "events": {
+    "pumpStarted": {
+      "title": "Pompa Avviata",
+      "description": "Evento emesso quando la pompa viene avviata",
+      "data": {
+        "type": "object",
+        "properties": {
+          "flowRate": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "pumpStopped": {
+      "title": "Pompa Fermata",
+      "description": "Evento emesso quando la pompa viene fermata",
+      "data": {
+        "type": "object",
+        "properties": {
+          "waterUsed": {
+            "type": "number"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}
