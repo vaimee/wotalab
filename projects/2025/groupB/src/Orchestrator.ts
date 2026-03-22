@@ -241,9 +241,9 @@ export class IrrigationOrchestrator {
       // Log stato attuale
       const now = new Date().toLocaleTimeString('it-IT');
       // Formattazione allineata con icone per lettura rapida
-      const statusIcon = isPumping ? "🚿 Pompa: ON" : "🚿 Pompa: OFF";
-      const soilStr = `💧 ${soilMoisture.toFixed(1)}%`.padEnd(10);
-      const lightStr = `☀️ ${luminosity.toFixed(0)} lux`.padEnd(12);
+      const statusIcon = isPumping ? "Pompa: ON" : "Pompa: OFF";
+      const soilStr = `${soilMoisture.toFixed(1)}%`.padEnd(10);
+      const lightStr = `${luminosity.toFixed(0)} lux`.padEnd(12);
       
       console.log(`[MONITOR] ${now} | ${soilStr} | ${lightStr} | ${statusIcon}`);
 
@@ -255,7 +255,7 @@ export class IrrigationOrchestrator {
       
       // Se la pompa è attiva e l'umidità ha raggiunto il massimo -> FERMA
       if (isPumping && soilMoisture >= this.maxSoilMoisture) {
-        console.log(`\n🛑 [STOP] STOP IRRIGAZIONE: Umidità target raggiunta (${this.maxSoilMoisture}%)\n`);
+        console.log(`\n [STOP] STOP IRRIGAZIONE: Umidità target raggiunta (${this.maxSoilMoisture}%)\n`);
 
         // Notifica il sensore che la pompa si sta fermando
         if (this.humiditySensorThing) {

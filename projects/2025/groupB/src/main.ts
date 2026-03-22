@@ -150,11 +150,11 @@ async function main() {
     } else if (command === "s") {
       const status = await orchestrator.getSystemStatus();
       console.log("\n--- STATO DEL SISTEMA ---");
-      console.log(`  💧 Umidità terreno : ${status.sensors.soilMoisture?.toFixed(1)}%`);
-      console.log(`  🌡️ Temperatura     : ${status.sensors.temperature?.toFixed(1)}°C`);
-      console.log(`  ☀️ Luminosità      : ${status.sensors.luminosity?.toFixed(0)} lux`);
-      console.log(`  ⚙️ Pompa           : ${status.pump.isPumping ? "IN FUNZIONE" : "FERMA"}`);
-      console.log(`  🚰 Acqua totale    : ${status.pump.totalWaterUsed?.toFixed(2)} L\n`);
+      console.log(`   Umidità terreno : ${status.sensors.soilMoisture?.toFixed(1)}%`);
+      console.log(`   Temperatura     : ${status.sensors.temperature?.toFixed(1)}°C`);
+      console.log(`   Luminosità      : ${status.sensors.luminosity?.toFixed(0)} lux`);
+      console.log(`   Pompa           : ${status.pump.isPumping ? "IN FUNZIONE" : "FERMA"}`);
+      console.log(`   Acqua totale    : ${status.pump.totalWaterUsed?.toFixed(2)} L\n`);
     } else if (command === "a") {
       orchestrator.toggleAutoMode();
     } else if (command === "m") {
