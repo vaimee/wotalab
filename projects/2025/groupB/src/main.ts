@@ -43,7 +43,6 @@ async function main() {
     const WEB_PORT = 3000;
     server.listen(WEB_PORT, () => {
       console.log(`[WEB] Dashboard disponibile su: http://localhost:${WEB_PORT}`);
-      console.log(`      Apri il browser e vai a http://localhost:${WEB_PORT}\n`);
     });
 
     // 2. Setup WebSocket Server per aggiornamenti real-time
