@@ -65,6 +65,25 @@ L’obiettivo è acquisire competenze su:
 - sviluppo di applicazioni web per l’automazione;
 - integrazione tra frontend e backend in tempo reale.
 
+## Avvio simulazione
+
+Per installare i package necessari alla corretta esecuzione, eseguire dalla cartella in cui è presente il file package.json il comando `npm i` poi per eseguire e compilare la build esguire `npm start`
+Una volta avviato si riceve un feedback in console dell'avvenuto avvio e i tasti utilizzabili per la gestione manuale.
+
+Nel terminale dove hai avviato il sistema puoi usare:
+- `s` - Visualizza stato del sistema
+- `a` - Toggle modalità automatica
+- `m` - Irrigazione manuale (30 secondi)
+- `x` - Ferma irrigazione
+- `q` - Esci dal sistema
+
+## Endpoint Things Description
+Dal browser è raggiungibile la pagina della dashboard all'indirizzo http://localhost:3000 
+I sensori e l'attuatore sono raggiungibili ai seguenti url:
+- Sensore Luminosità esposto su: http://localhost:8080/light-sensor
+- Sensore Umidità esposto su: http://localhost:8080/humidity-sensor
+- Pompa Irrigazione esposta su: http://localhost:8080/irrigation-pump
+
 ## Sviluppato da:
 
 - Alessandro Rambaldi (alessandro.rambaldi@studio.unibo.it)
