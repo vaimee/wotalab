@@ -1,0 +1,69 @@
+@prefix : <http://example.org/smart-room#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+<http://example.org/smart-room> rdf:type owl:Ontology ;
+    dcterms:title "Smart Room Ontology" ;
+    dcterms:description "Un'ontologia locale per il progetto Smart Room GroupC, che estende SAREF e SOSA per mappare i sensori e attuatori del sistema." ;
+    owl:imports saref: , sosa: .
+
+#################################################################
+#    Classi Principali (Il Contesto)
+#################################################################
+
+:SmartRoom rdf:type owl:Class ;
+    rdfs:subClassOf saref:BuildingObject ;
+    rdfs:label "Smart Room" ;
+    rdfs:comment "Una stanza del progetto equipaggiata con sensori e attuatori." .
+
+#################################################################
+#    Sensori (Utilizzano SOSA - Sensor, Observation, ecc.)
+#################################################################
+
+:TempHumiditySensor rdf:type owl:Class ;
+    rdfs:subClassOf sosa:Sensor ;
+    rdfs:label "Sensore di Temperatura e Umidità" .
+
+:PresenceSensor rdf:type owl:Class ;
+    rdfs:subClassOf sosa:Sensor ;
+    rdfs:label "Sensore di Presenza" .
+
+:WindowSensor rdf:type owl:Class ;
+    rdfs:subClassOf sosa:Sensor ;
+    rdfs:label "Sensore Finestra" .
+
+:LightSensor rdf:type owl:Class ;
+    rdfs:subClassOf sosa:Sensor ;
+    rdfs:label "Sensore di Luminosità" .
+
+#################################################################
+#    Attuatori (Utilizzano SAREF perché sono elettrodomestici)
+#################################################################
+
+:Boiler rdf:type owl:Class ;
+    rdfs:subClassOf saref:Heater ;
+    rdfs:label "Caldaia" .
+
+:RoomLight rdf:type owl:Class ;
+    rdfs:subClassOf saref:LightSwitch ;
+    rdfs:label "Luce della Stanza" .
+
+#################################################################
+#    Proprietà e Relazioni (Come le cose sono collegate)
+#################################################################
+
+:hasDevice rdf:type owl:ObjectProperty ;
+    rdfs:domain :SmartRoom ;
+    rdfs:label "has device" ;
+    rdfs:comment "Collega la stanza a un dispositivo al suo interno." .
+
+:isMonitoring rdf:type owl:ObjectProperty ;
+    rdfs:domain sosa:Sensor ;
+    rdfs:range :SmartRoom ;
+    rdfs:label "is monitoring" ;
+    owl:inverseOf :hasDevice ;
+    rdfs:comment "Indica quale stanza sta monitorando il sensore. Questa è l'azione inversa di hasDevice." .

@@ -1,0 +1,83 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "sosa": "http://www.w3.org/ns/sosa/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "@type": [
+        "saref:LightSwitch",
+        "sosa:Actuator",
+        "smart:RoomLight"
+    ],
+    "title": "lightActuator",
+    "description": "Light actuator for room lighting",
+    "securityDefinitions": {
+        "nosec_sc": {
+            "scheme": "nosec"
+        }
+    },
+    "security": [
+        "nosec_sc"
+    ],
+    "properties": {
+        "isOn": {
+            "@type": "saref:OnOffState",
+            "type": "boolean",
+            "title": "Light State",
+            "description": "True if the light is ON",
+            "readOnly": false,
+            "observable": true
+        },
+        "mode": {
+            "type": "string",
+            "title": "Control Mode",
+            "description": "Manual mode ignores automation; auto mode allows the reasoner to control the light",
+            "enum": [
+                "manual",
+                "auto"
+            ],
+            "readOnly": false,
+            "observable": true
+        },
+        "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Actuator runtime status",
+            "enum": [
+                "online",
+                "offline",
+                "error"
+            ],
+            "readOnly": true,
+            "observable": true
+        }
+    },
+    "actions": {
+        "turnOn": {
+            "@type": "saref:OnCommand",
+            "description": "Turn light ON"
+        },
+        "turnOff": {
+            "@type": "saref:OffCommand",
+            "description": "Turn light OFF"
+        },
+        "toggle": {
+            "@type": "saref:ToggleCommand",
+            "description": "Toggle light state"
+        },
+        "reset": {
+            "description": "Reset internal actuator state"
+        }
+    },
+    "events": {
+        "stateChanged": {
+            "description": "Emitted when light state changes",
+            "data": {
+                "type": "boolean"
+            }
+        }
+    }
+}

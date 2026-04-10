@@ -1,0 +1,109 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "title": "houseController",
+    "securityDefinitions": {
+        "nosec_sc": {
+            "scheme": "nosec"
+        }
+    },
+    "security": [
+        "nosec_sc"
+    ],
+    "description": "Global state for the smart home including operation modes and security status",
+    "properties": {
+        "currentMode": {
+            "type": "string",
+            "enum": [
+                "HOME",
+                "NIGHT",
+                "ECO",
+                "AWAY"
+            ],
+            "description": "Operation mode of the house",
+            "readOnly": false
+        },
+        "alarmActive": {
+            "type": "boolean",
+            "description": "Indicates if the security alarm is currently triggered",
+            "readOnly": true
+        },
+        "alarmReason": {
+            "type": "string",
+            "description": "Reason why the alarm was triggered",
+            "readOnly": true
+        },
+        "targetTemperatureHome": {
+            "type": "number",
+            "description": "Target temperature for the room during HOME mode",
+            "minimum": 10,
+            "maximum": 40,
+            "readOnly": false
+        },
+        "targetTemperatureNight": {
+            "type": "number",
+            "description": "Target temperature for the room during NIGHT mode",
+            "minimum": 10,
+            "maximum": 40,
+            "readOnly": false
+        },
+        "targetTemperatureEco": {
+            "type": "number",
+            "description": "Target temperature for the room during ECO mode",
+            "minimum": 10,
+            "maximum": 40,
+            "readOnly": false
+        },
+        "targetTemperatureAway": {
+            "type": "number",
+            "description": "Target temperature for the room during AWAY mode",
+            "minimum": 10,
+            "maximum": 40,
+            "readOnly": false
+        }
+    },
+    "actions": {
+        "setMode": {
+            "description": "Change the house operation mode",
+            "input": {
+                "type": "string",
+                "enum": [
+                    "HOME",
+                    "NIGHT",
+                    "ECO",
+                    "AWAY"
+                ]
+            }
+        },
+        "resetAlarm": {
+            "description": "Dismiss the current alarm status"
+        },
+        "triggerAlarm": {
+            "description": "Trigger the security alarm",
+            "input": {
+                "type": "string"
+            }
+        }
+    },
+    "events": {
+        "alarmTriggered": {
+            "description": "Emitted when a security breach is detected",
+            "data": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string"
+                    },
+                    "timestamp": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,77 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "sosa": "http://www.w3.org/ns/sosa/",
+            "qudt": "http://qudt.org/schema/qudt/",
+            "unit": "http://qudt.org/vocab/unit/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "@type": [
+        "smart:TempHumiditySensor",
+        "saref:TemperatureSensor",
+        "saref:HumiditySensor",
+        "sosa:Sensor"
+    ],
+    "title": "tempHumiditySensor",
+    "description": "Temperature and humidity sensor for a smart room",
+    "securityDefinitions": {
+        "nosec_sc": {
+            "scheme": "nosec"
+        }
+    },
+    "security": [
+        "nosec_sc"
+    ],
+    "properties": {
+        "temperature": {
+            "@type": "saref:Temperature",
+            "type": "number",
+            "title": "Temperature",
+            "description": "Air temperature in Celsius",
+            "unit": "unit:Deg_C",
+            "minimum": -10,
+            "maximum": 50,
+            "readOnly": false,
+            "observable": true
+        },
+        "humidityPct": {
+            "@type": "saref:Humidity",
+            "type": "number",
+            "title": "Relative Humidity",
+            "description": "Relative humidity percentage",
+            "unit": "unit:PERCENT",
+            "minimum": 0,
+            "maximum": 100,
+            "readOnly": false,
+            "observable": true
+        },
+        "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Sensor runtime status",
+            "enum": [
+                "online",
+                "offline",
+                "error"
+            ],
+            "readOnly": false,
+            "observable": true
+        }
+    },
+    "actions": {
+        "reset": {
+            "description": "Reset internal sensor state (e.g., clear last error)"
+        }
+    },
+    "events": {
+        "sensorError": {
+            "description": "Emitted when the sensor adapter detects an error",
+            "data": {
+                "type": "string"
+            }
+        }
+    }
+}

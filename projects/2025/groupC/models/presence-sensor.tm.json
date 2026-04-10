@@ -1,0 +1,66 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "sosa": "http://www.w3.org/ns/sosa/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "@type": [
+        "smart:PresenceSensor",
+        "saref:OccupancySensor",
+        "sosa:Sensor"
+    ],
+    "title": "presenceSensor",
+    "description": "Presence/occupancy sensor for a smart room",
+    "securityDefinitions": {
+        "nosec_sc": {
+            "scheme": "nosec"
+        }
+    },
+    "security": [
+        "nosec_sc"
+    ],
+    "properties": {
+        "presence": {
+            "@type": "saref:Occupancy",
+            "type": "boolean",
+            "title": "Presence",
+            "description": "True if the room is occupied, false otherwise",
+            "readOnly": false,
+            "observable": true
+        },
+        "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Sensor runtime status",
+            "enum": [
+                "online",
+                "offline",
+                "error"
+            ],
+            "readOnly": false,
+            "observable": true
+        }
+    },
+    "actions": {
+        "reset": {
+            "description": "Reset internal sensor state (e.g., clear last error)"
+        }
+    },
+    "events": {
+        "presenceChanged": {
+            "description": "Emitted when presence changes (occupied/unoccupied)",
+            "data": {
+                "type": "boolean"
+            }
+        },
+        "sensorError": {
+            "description": "Emitted when the sensor adapter detects an error",
+            "data": {
+                "type": "string"
+            }
+        }
+    }
+}

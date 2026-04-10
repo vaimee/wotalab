@@ -1,0 +1,71 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "sosa": "http://www.w3.org/ns/sosa/",
+            "qudt": "http://qudt.org/schema/qudt/",
+            "unit": "http://qudt.org/vocab/unit/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "@type": [
+        "smart:LightSensor",
+        "saref:LightSensor",
+        "sosa:Sensor"
+    ],
+    "title": "lightSensor",
+    "description": "Ambient light sensor for a smart room",
+    "securityDefinitions": {
+        "nosec_sc": {
+            "scheme": "nosec"
+        }
+    },
+    "security": [
+        "nosec_sc"
+    ],
+    "properties": {
+        "illuminanceLux": {
+            "@type": "saref:Illuminance",
+            "type": "number",
+            "title": "Illuminance",
+            "description": "Ambient light level measured in lux",
+            "unit": "unit:LUX",
+            "minimum": 0,
+            "maximum": 100000,
+            "readOnly": false,
+            "observable": true
+        },
+        "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Sensor runtime status",
+            "enum": [
+                "online",
+                "offline",
+                "error"
+            ],
+            "readOnly": false,
+            "observable": true
+        }
+    },
+    "actions": {
+        "reset": {
+            "description": "Reset internal sensor state (e.g., clear last error)"
+        }
+    },
+    "events": {
+        "illuminanceChanged": {
+            "description": "Emitted when illuminance changes significantly",
+            "data": {
+                "type": "number"
+            }
+        },
+        "sensorError": {
+            "description": "Emitted when the sensor adapter detects an error",
+            "data": {
+                "type": "string"
+            }
+        }
+    }
+}
