@@ -89,44 +89,45 @@ flowchart LR
     classDef proto fill:#fef08a,stroke:#eab308,stroke-width:1.4px,color:#713f12
 
     subgraph Modelli["Strato Semantico"]
-        TD["Thing Descriptions & Models (.tm.json / .ttl)"]:::model
+        TD["Thing Descriptions & Models\n(.tm.json / .ttl)"]:::model
     end
 
     subgraph Backend["WoT Servient (Producer)"]
-        MAIN["Main Server (Exposes Things)"]:::servient
+        MAIN["Main Server\n(Exposes Things)"]:::servient
+        
+        subgraph Devices["Dispositivi Virtualizzati"]
+            direction LR
+            subgraph Sensors["Sensori"]
+                S_TH["Temp / Umidità"]:::io
+                S_LX["Luce"]:::io
+                S_PR["Presenza"]:::io
+                S_W["Finestra"]:::io
+            end
+            subgraph Actuators["Attuatori"]
+                A_B["Caldaia"]:::io
+                A_L["Luci"]:::io
+            end
+        end
     end
 
     subgraph Logic["WoT Servient (Consumer)"]
-        ORCH["Room Orchestrator (Automazione)"]:::logic
+        ORCH["Room Orchestrator\n(Automazione)"]:::logic
     end
 
-    HTTP_PROTO(("Protocollo HTTP\n(localhost:8080)")):::proto
-
-    subgraph Devices["Dispositivi Virtualizzati"]
-        direction LR
-        subgraph Sensors["Sensori"]
-            S_TH["Temp / Umidità"]:::io
-            S_LX["Luce"]:::io
-            S_PR["Presenza"]:::io
-            S_W["Finestra"]:::io
-        end
-        subgraph Actuators["Attuatori"]
-            A_B["Caldaia"]:::io
-            A_L["Luci"]:::io
-        end
-    end
+    HTTP_PROTO(("Interfaccia REST\n(HTTP :8080)")):::proto
 
     subgraph Frontend["Pannello Utente"]
         DASH["Dashboard Vue.js"]:::ui
     end
 
+    %% Relazioni logiche
     TD -->|"Definisce Capability"| MAIN
-    MAIN -->|"Istanzia"| Devices
+    MAIN -->|"Istanzia e Gestisce"| Devices
     
+    %% Flusso di rete
     MAIN <==> HTTP_PROTO
-    HTTP_PROTO <==>|"Polling & Action Invocation"| ORCH
-    
-    MAIN <-->|"REST API / WebSockets"| DASH
+    HTTP_PROTO <==>|"REST API (HTTP)"| ORCH
+    HTTP_PROTO <==>|"REST API (HTTP)"| DASH
 ```
 
 
