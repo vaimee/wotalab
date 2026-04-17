@@ -62,6 +62,40 @@ Il sistema è composto dai seguenti componenti:
     - JS (JavaScript)
     - Chart.js
 
-- Comunicazione: 
+- Comunicazione e IOT: 
     - node-wot
+    - MQTT
 
+## Comportamento del simulatore (valvole)
+
+- Pubblica annunci MQTT
+- Invia temperatura periodicamente
+- Riceve comandi di accensione/spegnimento
+- Simula risposta termica semplificata
+
+## Logica del controller
+
+- Controllo basato sull'isteresi
+- Gestione override manuali (temperatura, stanza, accensione, spegnimento)
+- Rillevamento valvole offline (aggiornamento stato valvola)
+- Decisione ON/OFF valvola (automatica)
+
+## Integrazione WOT (Web Of Things)
+
+Le valvole sono rappresentate come thing WOT:
+- Proprietà:
+    - temperatura
+    - stato riscaldamento
+
+- Azioni:
+    - setHeating (esempio)
+
+Questo permettera di avere una modellazione IOT e WOT.
+
+## Scopo didattico
+
+Il progetto è stato pensato per:
+- Comprendere architetture IoT reali
+- Usare MQTT per comunicazione distribuita
+- Integrare backend, frontend e dispositivi
+- Introdurre il paradigma Web of Things
