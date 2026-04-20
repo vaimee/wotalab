@@ -1,0 +1,71 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "sosa": "http://www.w3.org/ns/sosa/",
+            "qudt": "http://qudt.org/schema/qudt/",
+            "unit": "http://qudt.org/vocab/unit/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "@type": [
+        "smart:TempHumidityAdapter",
+        "saref:TemperatureSensor",
+        "saref:HumiditySensor"
+    ],
+    "title": "tempHumiditySensor",
+    "description": "HTTP adapter/proxy for the MQTT-based temperature and humidity sensor",
+    "securityDefinitions": {
+        "nosec_sc": {
+            "scheme": "nosec"
+        }
+    },
+    "security": [
+        "nosec_sc"
+    ],
+    "properties": {
+        "temperature": {
+            "@type": "saref:Temperature",
+            "type": "number",
+            "title": "Temperature",
+            "description": "Adapted air temperature in Celsius (read from MQTT sensor)",
+            "unit": "unit:Deg_C",
+            "minimum": -10,
+            "maximum": 50,
+            "readOnly": true,
+            "observable": true
+        },
+        "humidityPct": {
+            "@type": "saref:Humidity",
+            "type": "number",
+            "title": "Relative Humidity",
+            "description": "Adapted relative humidity percentage (read from MQTT sensor)",
+            "unit": "unit:PERCENT",
+            "minimum": 0,
+            "maximum": 100,
+            "readOnly": true,
+            "observable": true
+        },
+        "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Adapted sensor runtime status",
+            "enum": [
+                "online",
+                "offline",
+                "error"
+            ],
+            "readOnly": true,
+            "observable": true
+        }
+    },
+    "events": {
+        "sensorError": {
+            "description": "Forwarded from the MQTT sensor when an error is detected",
+            "data": {
+                "type": "string"
+            }
+        }
+    }
+}
