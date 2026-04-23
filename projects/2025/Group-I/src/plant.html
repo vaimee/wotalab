@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Plant - Monitoraggio Pianta</title>
+    <link href="../output.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@node-wot/browser-bundle@latest/dist/wot-bundle.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-900 font-sans">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+        <div class="flex items-center justify-between gap-4 mb-8 flex-wrap">
+            <div>
+                <p class="text-sm uppercase tracking-[0.3em] text-slate-500">Smart Plant Care</p>
+                <h1 id="screen-title" class="text-4xl sm:text-5xl font-bold text-slate-900 mt-3">Monitoraggio Pianta</h1>
+            </div>
+            <div>
+                <a href="./index.html" class="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50">
+                    <img src="/img/back.png" alt="Indietro" class="h-3 w-3" />
+                    Torna alla selezione
+                </a>
+            </div>
+        </div>
+
+        <div class="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+            <section class="bg-white rounded-3xl p-6 shadow-2xl shadow-slate-200/60">
+                <div class="flex items-center justify-between gap-4 mb-6">
+                    <div class="flex items-center gap-4">
+                        <div>
+                            <p class="text-sm text-slate-500">Pianta selezionata</p>
+                            <h2 id="plant-name" class="text-3xl font-semibold text-slate-900">--</h2>
+                        </div>
+                        <img id="plant-img" class="hidden drop-shadow-sm" style="height: 45px; width: auto;" alt="Pianta" />
+                    </div>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-center">
+                        <p class="text-sm uppercase tracking-[0.25em] text-slate-500 mb-4">Umidità</p>
+                        <div id="m-val" class="text-5xl font-bold text-slate-900">--%</div>
+                        <div id="m-advice" class="mt-4 rounded-3xl bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm min-h-[4rem]">Connessione...</div>
+                    </div>
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-center">
+                        <p class="text-sm uppercase tracking-[0.25em] text-slate-500 mb-4">Luce</p>
+                        <div id="l-val" class="text-5xl font-bold text-amber-500">-- lx</div>
+                        <div id="l-advice" class="mt-4 rounded-3xl bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm min-h-[4rem]">Connessione...</div>
+                    </div>
+                </div>
+
+                <div class="mt-8 grid gap-5 sm:grid-cols-2">
+                    <!-- Controllo Pompa -->
+                    <div class="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm transition hover:shadow-md">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-12 w-12  items-center justify-center ">
+                                <img src="/img/drop2.png" alt="Pompa" class="h-6 w-6 object-contain" />
+                            </div>
+                            <span class="text-lg font-semibold text-slate-900">Pompa</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="togglePump()" title="Attiva/Disattiva Pompa" class="transition hover:scale-110 active:scale-95">
+                                <img id="pump-toggle-img" src="/img/off.png" alt="Pompa Toggle" class="h-10 w-10 transition-all duration-200" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Controllo Luce -->
+                    <div class="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm transition hover:shadow-md">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-12 w-12  items-center justify-center">
+                                <img src="/img/sun2.png" alt="Luce" class="h-6 w-6 object-contain" />
+                            </div>
+                            <span class="text-lg font-semibold text-slate-900">Luce</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleLamp()" title="Attiva/Disattiva Luce" class="transition hover:scale-110 active:scale-95">
+                                <img id="lamp-toggle-img" src="/img/off.png" alt="Luce Toggle" class="h-10 w-10 transition-all duration-200" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Registro Eventi -->
+            <aside class="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/60">
+                <h3 class="text-xl font-semibold text-slate-900 mb-4">Registro eventi</h3>
+                <div id="log" class="min-h-[264px] rounded-3xl bg-slate-50 p-4 text-sm leading-6 text-slate-700 font-mono"></div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="./plant.js"></script>
+</body>
+</html>
