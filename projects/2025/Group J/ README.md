@@ -250,7 +250,7 @@ Utilizzato per:
 
 ## MQTT
 
-Utilizzato per:
+Verra' per:
 - comunicazione eventi in tempo reale
 - messaggistica publish/subscribe
 - notifiche asincrone
@@ -308,7 +308,7 @@ I metadati semantici migliorano:
 
 # Obiettivi didattici
 
-Questo progetto dimostra l’applicazione pratica di:
+Questo progetto dimostra applicazione pratica di:
 
 - architettura Web of Things
 - Thing Description
@@ -318,3 +318,13 @@ Questo progetto dimostra l’applicazione pratica di:
 - concetti di Digital Twin
 - astrazione hardware
 - sistemi IoT interoperabili
+
+---
+
+### Componenti del gruppo 
+
+Niki Hammond - niki.hammond@srudio.unibo.it
+
+Silvia Busti - silvia.busti@studio.unibo.it
+
+Manuel Ragazzini - manuel.ragazzini@studio.unibo.it 
