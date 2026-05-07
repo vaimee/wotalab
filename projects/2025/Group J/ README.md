@@ -306,47 +306,6 @@ I metadati semantici migliorano:
 
 ---
 
-# Struttura repository
-
-```text
-project/
-│
-├── things/
-│   ├── door-sensor/
-│   ├── window-sensor/
-│   ├── motion-sensor/
-│   ├── alarm-system/
-│   └── notification-service/
-│
-├── orchestrator/
-│
-├── dashboard/
-│
-├── td/
-│
-├── mqtt/
-│
-└── README.md
-```
-
----
-
-# Possibili sviluppi futuri
-
-Possibili estensioni future del progetto:
-
-- integrazione con dispositivi reali ESP32/Raspberry Pi
-- notifiche push
-- integrazione Telegram o mobile alerts
-- integrazione videocamere
-- persistenza eventi e logging
-- supporto multi-stanza
-- autenticazione utenti
-- deploy cloud
-- integrazione assistenti vocali
-
----
-
 # Obiettivi didattici
 
 Questo progetto dimostra l’applicazione pratica di:
