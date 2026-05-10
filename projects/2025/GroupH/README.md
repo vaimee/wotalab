@@ -1,5 +1,11 @@
 # 🌡️ Progetto Automazione — Smart Thermostat
 
+Autori: Naman Bagga, Salvatore Persico
+
+Corso: Laboratorio di piattaforme di sviluppo per automazione
+
+---
+
 Documentazione tecnica del progetto **ProgettoAutomazione**.
 
 Questo repository implementa un sistema di termoregolazione simulato composto da:
