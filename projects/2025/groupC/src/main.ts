@@ -5,7 +5,7 @@ import { createPresenceSensor } from "./presenceSensor.js";
 import { createWindowSensor } from "./windowSensor.js";
 import { createLightSensor } from "./lightSensor.js";
 import { startMqttTempHumiditySensor } from "./tempHumiditySensor.js";
-import { createTempHumidityAdapter } from "./tempHumidityAdapter.js";
+import { createTempHumidityCache } from "./tempHumidityCache.js";
 import { createRelayActuator } from "./relayActuator.js";
 import { createHouseController } from "./houseController.js";
 import { startRoomOrchestrator } from "./roomOrchestrator.js";
@@ -51,15 +51,15 @@ async function main() {
     }
   );
 
-  // ---- ADAPTER HTTP (ponte MQTT → HTTP) ----
-  // L'adapter consuma il sensore via MQTT e ri-espone i dati via HTTP
-  // sull'URL /temphumiditysensor (stesso URL di prima, nessuna modifica per orchestratore/UI).
-  const thAdapter = await createTempHumidityAdapter(wot as any, th.exposedTd);
+  // ---- CACHE (MQTT → HTTP) ----
+  // La cache consuma il device via target.td.json (forms MQTT espliciti)
+  // e ri-espone i dati via HTTP su /temphumiditysensor.
+  // expose() viene chiamato internamente da createTempHumidityCache.
+  const thCache = await createTempHumidityCache(wot as any);
 
   await presence.thing.expose();
   await windowS.thing.expose();
   await light.thing.expose();
-  await thAdapter.thing.expose(); 
   await lightActuator.thing.expose();
   await boilerActuator.thing.expose();
   await controller.thing.expose();
@@ -77,7 +77,7 @@ async function main() {
       "win=", windowS.state.isOpen,
       "lux=", Math.round(light.state.illuminanceLux),
       "t=", th.state.temperature.toFixed(1),
-      "t(adpt)=", thAdapter.adapter.temperature.toFixed(1),
+      "t(cache)=", (thCache.cache.get("temperature") ?? 0).toFixed(1),
       "light=", lightActuator.state.isOn,
       "boiler=", boilerActuator.state.isOn
     );
@@ -88,7 +88,7 @@ async function main() {
   console.log("Window:          http://localhost:8080/windowsensor");
   console.log("Light:           http://localhost:8080/lightsensor");
   console.log("Temp/Hum (MQTT): mqtt://localhost:1883/temphumiditysensor");
-  console.log("Temp/Hum (Adpt): http://localhost:8080/temphumiditysensor");
+  console.log("Temp/Hum (Cache): http://localhost:8080/temphumiditysensor");
   console.log("Light Actuator:  http://localhost:8080/lightactuator");
   console.log("Boiler Actuator: http://localhost:8080/boileractuator");
   console.log("Controller:      http://localhost:8080/housecontroller");

@@ -1,0 +1,55 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "unit": "http://qudt.org/vocab/unit/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "@type": ["smart:TempHumiditySensor", "saref:TemperatureSensor", "saref:HumiditySensor"],
+    "title": "tempHumidityDevice",
+    "description": "Target TD for the MQTT temperature/humidity device. Used by the cache to subscribe to MQTT topics.",
+    "securityDefinitions": {
+        "nosec_sc": { "scheme": "nosec" }
+    },
+    "security": ["nosec_sc"],
+    "properties": {
+        "temperature": {
+            "@type": "saref:Temperature",
+            "type": "number",
+            "title": "Temperature",
+            "description": "Air temperature in Celsius published by the MQTT device",
+            "unit": "unit:Deg_C",
+            "minimum": -10,
+            "maximum": 50,
+            "readOnly": true,
+            "observable": true,
+            "forms": [
+                {
+                    "href": "mqtt://localhost:1883/temphumiditysensor/properties/temperature",
+                    "op": ["observeproperty", "readproperty"],
+                    "contentType": "application/json"
+                }
+            ]
+        },
+        "humidityPct": {
+            "@type": "saref:Humidity",
+            "type": "number",
+            "title": "Relative Humidity",
+            "description": "Relative humidity percentage published by the MQTT device",
+            "unit": "unit:PERCENT",
+            "minimum": 0,
+            "maximum": 100,
+            "readOnly": true,
+            "observable": true,
+            "forms": [
+                {
+                    "href": "mqtt://localhost:1883/temphumiditysensor/properties/humidityPct",
+                    "op": ["observeproperty", "readproperty"],
+                    "contentType": "application/json"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,41 @@
+{
+    "@context": [
+        "https://www.w3.org/2019/wot/td/v1",
+        {
+            "saref": "https://saref.etsi.org/core/",
+            "unit": "http://qudt.org/vocab/unit/",
+            "smart": "http://example.org/smart-room#"
+        }
+    ],
+    "@type": ["smart:TempHumiditySensor", "saref:TemperatureSensor", "saref:HumiditySensor"],
+    "title": "tempHumiditySensor",
+    "description": "Exposed HTTP Thing. Serves cached temperature and humidity data from the MQTT device.",
+    "securityDefinitions": {
+        "nosec_sc": { "scheme": "nosec" }
+    },
+    "security": ["nosec_sc"],
+    "properties": {
+        "temperature": {
+            "@type": "saref:Temperature",
+            "type": "number",
+            "title": "Temperature",
+            "description": "Cached air temperature in Celsius (sourced from MQTT device)",
+            "unit": "unit:Deg_C",
+            "minimum": -10,
+            "maximum": 50,
+            "readOnly": true,
+            "observable": true
+        },
+        "humidityPct": {
+            "@type": "saref:Humidity",
+            "type": "number",
+            "title": "Relative Humidity",
+            "description": "Cached relative humidity percentage (sourced from MQTT device)",
+            "unit": "unit:PERCENT",
+            "minimum": 0,
+            "maximum": 100,
+            "readOnly": true,
+            "observable": true
+        }
+    }
+}
