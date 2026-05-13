@@ -1,12 +1,13 @@
 {
     "@context": [
-        "https://www.w3.org/2019/wot/td/v1",
+        "https://www.w3.org/2022/wot/td/v1.1",
         {
             "saref": "https://saref.etsi.org/core/",
             "unit": "http://qudt.org/vocab/unit/",
             "smart": "http://example.org/smart-room#"
         }
     ],
+    "id": "urn:dev:wot:groupC:temp-humidity-sensor",
     "@type": ["smart:TempHumiditySensor", "saref:TemperatureSensor", "saref:HumiditySensor"],
     "title": "tempHumidityDevice",
     "description": "Target TD for the MQTT temperature/humidity device. Used by the cache to subscribe to MQTT topics.",
@@ -46,6 +47,21 @@
             "forms": [
                 {
                     "href": "mqtt://localhost:1883/temphumiditysensor/properties/humidityPct",
+                    "op": ["observeproperty", "readproperty"],
+                    "contentType": "application/json"
+                }
+            ]
+        },
+        "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Connection status of the pure MQTT sensor",
+            "enum": ["online", "offline", "error"],
+            "readOnly": true,
+            "observable": true,
+            "forms": [
+                {
+                    "href": "mqtt://localhost:1883/temphumiditysensor/properties/status",
                     "op": ["observeproperty", "readproperty"],
                     "contentType": "application/json"
                 }

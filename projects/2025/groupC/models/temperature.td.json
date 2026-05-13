@@ -1,6 +1,6 @@
 {
     "@context": [
-        "https://www.w3.org/2019/wot/td/v1",
+        "https://www.w3.org/2022/wot/td/v1.1",
         {
             "saref": "https://saref.etsi.org/core/",
             "unit": "http://qudt.org/vocab/unit/",
@@ -24,7 +24,14 @@
             "minimum": -10,
             "maximum": 50,
             "readOnly": true,
-            "observable": true
+            "observable": true,
+            "forms": [
+                {
+                    "href": "http://localhost:8080/temphumiditysensor/properties/temperature",
+                    "contentType": "application/json",
+                    "op": ["readproperty", "observeproperty"]
+                }
+            ]
         },
         "humidityPct": {
             "@type": "saref:Humidity",
@@ -35,7 +42,29 @@
             "minimum": 0,
             "maximum": 100,
             "readOnly": true,
-            "observable": true
+            "observable": true,
+            "forms": [
+                {
+                    "href": "http://localhost:8080/temphumiditysensor/properties/humidityPct",
+                    "contentType": "application/json",
+                    "op": ["readproperty", "observeproperty"]
+                }
+            ]
+        },
+        "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Connection status of the device (cached)",
+            "enum": ["online", "offline", "error"],
+            "readOnly": true,
+            "observable": true,
+            "forms": [
+                {
+                    "href": "http://localhost:8080/temphumiditysensor/properties/status",
+                    "contentType": "application/json",
+                    "op": ["readproperty", "observeproperty"]
+                }
+            ]
         }
     }
 }
