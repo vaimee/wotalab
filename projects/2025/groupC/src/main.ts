@@ -24,7 +24,7 @@ async function main() {
   const controller = await createHouseController(wot as any);
 
 
-  // Istanziamo e registriamo i vari dispositivi virtuali all'interno della rete
+  // Setup sensori e attuatori
   const presence = await createPresenceSensor(wot as any);
   const windowS = await createWindowSensor(wot as any);
   const lightActuator = await createRelayActuator(wot as any, "light-actuator.tm.json");
@@ -36,26 +36,15 @@ async function main() {
     () => windowS.state.isOpen
   );
 
-  // ---- SENSORE TEMPERATURA/UMIDITÀ VIA MQTT ----
-  // Il sensore ha un Servient MQTT proprio (broker in-process su porta 1883).
-  // I dati vengono pubblicati via protocol binding MQTT.
+  // Parte MQTT: Cache/Adapter e poi il sensore fisico
+  // La cache deve partire prima perché fa anche da broker
+  const thCache = await createTempHumidityCache(wot as any);
+
+  // Il sensore è un semplice client MQTT (niente WoT qui)
   const th = await startMqttTempHumiditySensor(
     () => boilerActuator.state.isOn,
-    () => windowS.state.isOpen,
-    () => {
-      const mode = controller.state.currentMode;
-      if (mode === "NIGHT") return controller.state.targetTemperatureNight;
-      if (mode === "ECO") return controller.state.targetTemperatureEco;
-      if (mode === "AWAY") return controller.state.targetTemperatureAway;
-      return controller.state.targetTemperatureHome;
-    }
+    () => windowS.state.isOpen
   );
-
-  // ---- CACHE (MQTT → HTTP) ----
-  // La cache consuma il device via target.td.json (forms MQTT espliciti)
-  // e ri-espone i dati via HTTP su /temphumiditysensor.
-  // expose() viene chiamato internamente da createTempHumidityCache.
-  const thCache = await createTempHumidityCache(wot as any);
 
   await presence.thing.expose();
   await windowS.thing.expose();
@@ -64,21 +53,19 @@ async function main() {
   await boilerActuator.thing.expose();
   await controller.thing.expose();
 
-  // Dopo aver agganciato e messo online tutti i nodi sensore e controller, facciamo partire 
-  //l'Orchestrator che ciclicamente controlla i parametri e interviene.
+  // Avvio dell'orchestratore per l'automazione
   await startRoomOrchestrator();
 
   setInterval(() => {
     console.log(
-      "STAT",
+      "LOG STATO:",
       "mode=", controller.state.currentMode,
       "alarm=", controller.state.alarmActive ? "!! ALARM !!" : "ok",
       "pres=", presence.state.presence,
       "win=", windowS.state.isOpen,
       "lux=", Math.round(light.state.illuminanceLux),
-      "t=", th.state.temperature.toFixed(1),
       "t(cache)=", (thCache.cache.get("temperature") ?? 0).toFixed(1),
-      "light=", lightActuator.state.isOn,
+      "h(cache)=", (thCache.cache.get("humidityPct") ?? 0).toFixed(1),
       "boiler=", boilerActuator.state.isOn
     );
   }, 30000);

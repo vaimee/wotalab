@@ -1,8 +1,4 @@
-import { Servient } from "@node-wot/core";
-import mqttBinding from "@node-wot/binding-mqtt";
-import { loadTdJson } from "./loadTd.js";
-
-const { MqttBrokerServer } = mqttBinding;
+import mqtt from "mqtt";
 
 export type TempHumidityState = {
   temperature: number;
@@ -11,58 +7,38 @@ export type TempHumidityState = {
 };
 
 /**
- * Avvia il sensore temperatura/umidità come Thing MQTT.
- * Crea un proprio Servient con MqttBrokerServer (selfHost = broker in-process)
- * e pubblica i dati della simulazione via protocollo MQTT.
+ * Sensore simulato che invia dati su MQTT.
+ * Si comporta come un device "puro" (senza WoT).
  */
 export async function startMqttTempHumiditySensor(
   getBoilerState: () => boolean,
-  getWindowState: () => boolean,
-  getTargetTemp: () => number
+  getWindowState: () => boolean
 ) {
-  // Servient dedicato al sensore MQTT con broker in-process sulla porta 1883
-  const servient = new Servient();
-  servient.addServer(
-    new MqttBrokerServer({ uri: "mqtt://localhost:1883", selfHost: true }) as any
-  );
+  // Connessione al broker locale (gestito dalla cache)
+  const client = mqtt.connect("mqtt://localhost:1883");
 
-  const wot = await servient.start();
-  const td = loadTdJson("temp-humidity.tm.json");
-  const thing = await (wot as any).produce(td);
-
-  const state: TempHumidityState = { temperature: 22.0, humidityPct: 45.0, status: "online" };
-
-  // --- Handler lettura/scrittura proprietà ---
-  thing.setPropertyReadHandler("temperature", async () => state.temperature);
-  thing.setPropertyWriteHandler("temperature", async (v: any) => await setTemperature(await v.value()));
-  thing.setPropertyReadHandler("humidityPct", async () => state.humidityPct);
-  thing.setPropertyWriteHandler("humidityPct", async (v: any) => await setHumidityPct(await v.value()));
-  thing.setPropertyReadHandler("status", async () => state.status);
-  thing.setActionHandler("reset", async () => { await setStatus("online"); return true; });
-
-  const setTemperature = async (v: number) => {
-    state.temperature = Math.max(-10, Math.min(35, Number(v)));
-    try { await thing.emitPropertyChange("temperature"); } catch { }
+  const state: TempHumidityState = { 
+    temperature: 22.0, 
+    humidityPct: 45.0, 
+    status: "online" 
   };
 
-  const setHumidityPct = async (v: number) => {
-    state.humidityPct = Math.max(0, Math.min(100, Number(v)));
-    try { await thing.emitPropertyChange("humidityPct"); } catch { }
+  client.on("connect", () => {
+    console.log("[Sensor] Connesso al broker MQTT");
+    publishData();
+  });
+
+  // Pubblica i valori sui topic definiti nella TD manuale
+  const publishData = () => {
+    if (client.connected) {
+      client.publish("temphumiditysensor/properties/temperature", JSON.stringify(state.temperature));
+      client.publish("temphumiditysensor/properties/humidityPct", JSON.stringify(state.humidityPct));
+      client.publish("temphumiditysensor/properties/status", JSON.stringify(state.status));
+    }
   };
 
-  const setStatus = async (v: TempHumidityState["status"]) => {
-    state.status = v;
-    try { await thing.emitPropertyChange("status"); } catch { }
-  };
-
-  // --- SIMULAZIONE ---
-  // Ogni 5 secondi calcola l'inerzia termica della stanza
-  // 1. Baseline: la stanza tende naturalmente a 15°C (temperatura ambiente).
-  // 2. Se la finestra è APERTA, la temperatura tende a 10°C (esterno) e l'umidità sale.
-  // 3. Se la caldaia è ON, la temperatura sale (fino a un massimo di 35°C).
-  // 4. Se la caldaia è OFF, la temperatura scende verso la baseline/esterno.
-
-  const simInterval = setInterval(async () => {
+  // Simulazione dell'ambiente (caldaia, finestre, ecc.)
+  const simInterval = setInterval(() => {
     if (state.status !== "online") return;
 
     const windowOpen = getWindowState();
@@ -86,15 +62,14 @@ export async function startMqttTempHumiditySensor(
       state.humidityPct = Math.max(40, state.humidityPct - 3.0);
     }
 
-    await setTemperature(t);
+    state.temperature = t;
+    publishData();
   }, 5000);
 
-  await thing.expose();
-  console.log("[MQTT Sensor] tempHumiditySensor esposto via MQTT su mqtt://localhost:1883");
+  const stopSim = () => {
+    clearInterval(simInterval);
+    client.end();
+  };
 
-  // Restituiamo il TD esposto, così l'adapter può consumarlo direttamente
-  const exposedTd = thing.getThingDescription();
-
-  const stopSim = () => clearInterval(simInterval);
-  return { thing, state, exposedTd, setTemperature, setHumidityPct, setStatus, stopSim };
+  return { state, stopSim };
 }

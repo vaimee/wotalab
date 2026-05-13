@@ -8,14 +8,12 @@ export async function startRoomOrchestrator(opts: { intervalMs?: number } = {}) 
 
   console.log("[Orchestrator] Avvio dell'hub d'automazione...");
   
-  // Utilizziamo un Servient WoT puramente in forma client HTTP per potersi
-  // allacciare agevolmente ai sensori esaminandoli.
-
+  // Client HTTP per connettersi ai vari sensori
   const servient = new Servient();
   servient.addClientFactory(new HttpClientFactory(null));
   const wot = await servient.start();
 
-  console.log("[Orchestrator] Recupero e validazione delle specifiche collegate sulla rete locale...");
+  console.log("[Orchestrator] Recupero TD dei sensori...");
   
   const [
     presenceTD, windowTD, lightTD, thTD,
@@ -42,7 +40,7 @@ export async function startRoomOrchestrator(opts: { intervalMs?: number } = {}) 
 
   const simInterval = setInterval(async () => {
     try {
-      // Si richiede lo status più aggiornato ai vari nodi al fine di valutare la situazione globale attenendosi alle letture della stanza
+      // Legge lo stato attuale di tutti i dispositivi
       const pMode = await controllerThing.readProperty("currentMode");
       const currentMode = await pMode.value() as string;
 
@@ -103,8 +101,8 @@ export async function startRoomOrchestrator(opts: { intervalMs?: number } = {}) 
         }
       }
 
-      // AUTOMAZIONE: CONTROLLO IMPIANTO DI RISCALDAMENTO
-      // Disattiva il boiler per non sprecare calore verso l'esterno quando arieggiamo (o siamo usciti)
+      // CONTROLLO RISCALDAMENTO
+      // Spegne se la finestra è aperta o se siamo fuori
       if (boilerMode === "auto") {
         if (windowOpen || currentMode === "AWAY") {
           if (boilerOn) await boilerActuatorThing.invokeAction("turnOff");
