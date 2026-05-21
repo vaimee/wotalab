@@ -65,7 +65,7 @@ class TempHumidityCache extends EventEmitter {
 }
 
 /**
- * Crea il componente Adapter.
+ * Crea il componente Cache (Broker + Bridge).
  */
 export async function createTempHumidityCache(httpWot: WoTLike) {
   
