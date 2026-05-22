@@ -1,0 +1,105 @@
+@prefix : <http://example.org/wot/thermostat#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+: a owl:Ontology ;
+  rdfs:label "Smart Thermostat Ontology (GroupH)"@en ;
+  rdfs:comment "Ontology generic for the Smart Thermostat project: models rooms and valves exposed via WoT and persisted in SQLite."@en .
+
+#################################################################
+# Classes
+#################################################################
+
+:Valve a owl:Class ;
+  rdfs:label "Valve"@en ;
+  rdfs:comment "Thermostatic valve (WoT Thing) with live temperature and heating status."@en .
+
+:Room a owl:Class ;
+  rdfs:label "Room"@en ;
+  rdfs:comment "A room/zone where valves are assigned."@en .
+
+:TemperatureReading a owl:Class ;
+  rdfs:label "TemperatureReading"@en ;
+  rdfs:comment "A historical temperature measurement for a valve."@en .
+
+#################################################################
+# Object Properties
+#################################################################
+
+:hasRoom a owl:ObjectProperty ;
+  rdfs:label "has room"@en ;
+  rdfs:comment "Links a valve to the room it belongs to."@en ;
+  rdfs:domain :Valve ;
+  rdfs:range :Room .
+
+:hasTemperatureReading a owl:ObjectProperty ;
+  rdfs:label "has temperature reading"@en ;
+  rdfs:comment "Links a valve to its temperature readings."@en ;
+  rdfs:domain :Valve ;
+  rdfs:range :TemperatureReading .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+:hasSetpoint a owl:DatatypeProperty ;
+  rdfs:label "setpoint"@en ;
+  rdfs:comment "Desired temperature setpoint (from DB / control logic)."@en ;
+  rdfs:domain :Valve ;
+  rdfs:range xsd:decimal .
+
+:hasHeating a owl:DatatypeProperty ;
+  rdfs:label "heating"@en ;
+  rdfs:comment "Live heating state exposed by WoT (observable property)."@en ;
+  rdfs:domain :Valve ;
+  rdfs:range xsd:boolean .
+
+:hasTemperature a owl:DatatypeProperty ;
+  rdfs:label "temperature"@en ;
+  rdfs:comment "Live temperature exposed by WoT (observable property)."@en ;
+  rdfs:domain :Valve ;
+  rdfs:range xsd:decimal .
+
+:hasStatus a owl:DatatypeProperty ;
+  rdfs:label "status"@en ;
+  rdfs:comment "Operational status (e.g., OFFLINE/ONLINE) maintained by the controller."@en ;
+  rdfs:domain :Valve ;
+  rdfs:range xsd:string .
+
+:hasLastSeen a owl:DatatypeProperty ;
+  rdfs:label "last seen"@en ;
+  rdfs:comment "Timestamp of the last MQTT message received for the valve."@en ;
+  rdfs:domain :Valve ;
+  rdfs:range xsd:dateTime .
+
+:hasTemperatureValue a owl:DatatypeProperty ;
+  rdfs:label "temperature value"@en ;
+  rdfs:comment "Measured temperature value for a reading."@en ;
+  rdfs:domain :TemperatureReading ;
+  rdfs:range xsd:decimal .
+
+:hasTimestamp a owl:DatatypeProperty ;
+  rdfs:label "timestamp"@en ;
+  rdfs:comment "Timestamp for a temperature reading."@en ;
+  rdfs:domain :TemperatureReading ;
+  rdfs:range xsd:dateTime .
+
+#################################################################
+# Notes about identifiers
+#################################################################
+
+# The project creates WoT Things dynamically based on MQTT topic ids like:
+#   home/valves/{id}/temperature
+# where id follows the pattern /^valve\d+$/i (e.g., valve1, valve2, valve10).
+# This ontology is intentionally generic and does not enumerate concrete valve/room individuals.
+
+# Typical mapping assumptions for an implementation layer:
+# - Valve instance IRI could be formed from the valve id, e.g.:
+#     :valve1 a :Valve ; ...
+# - Room instance IRI could be formed from DB room id, e.g.:
+#     :room1 a :Room ; ...
+# - TemperatureReading instance could be formed per DB row, e.g.:
+#     :reading_123 a :TemperatureReading ; ...
+
