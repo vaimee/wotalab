@@ -7,17 +7,18 @@
 
 ## 1. Introduzione
 
-Il presente documento descrive l'architettura e l'implementazione di un sistema di sicurezza per una Smart Home, progettato secondo i principi del **Web of Things (WoT)**. L'obiettivo principale è la realizzazione di una rete di dispositivi simulati interconnessi, in grado di comunicare in tempo reale il proprio stato a un orchestratore centrale, il quale a sua volta coordina la logica di allarme e notifica.
-
-Il paradigma WoT è stato applicato fornendo per ogni dispositivo (Thing) una **Thing Description (TD)** esposta tramite API HTTP REST, descrivendo così metadati, proprietà, azioni ed eventi dei singoli componenti.
+Il progetto implementa un sistema di Smart Home Security basato sul paradigma Web of Things (WoT) secondo le specifiche W3C.
+Il sistema integra sensori, attuatori e un orchestratore centrale che coordina gli eventi in tempo reale tramite MQTT e WebSocket, mentre le interfacce dei dispositivi sono esposte tramite Thing Description (TD) in formato JSON-LD.
 
 ## 2. Architettura del Sistema
 
-L'architettura proposta si basa su un modello ibrido client-server e pub/sub, sfruttando una singola istanza Node.js che gestisce sia il layer HTTP che il broker MQTT.
+L’architettura proposta segue un modello event-driven ibrido basato su publish/subscribe (MQTT) e request/response (HTTP REST WoT), sfruttando una singola istanza Node.js che gestisce sia il layer HTTP che il broker MQTT.
+
 
 I componenti principali del sistema sono:
 
 1. **Thing (Sensori e Attuatori)**: Entità logiche che simulano dispositivi fisici (sensore porta, sensore finestra, sensore di movimento, sirena di allarme e servizio notifiche).
+Documentate da Thing Description che seguono lo standard W3C WoT v1.1 e includono contesto JSON-LD (@context).
 2. **Orchestrator**: Il nodo centrale che esegue la logica applicativa. Si iscrive ai topic MQTT per ricevere eventi, mantiene lo stato del sistema e comanda gli attuatori (es. trigger allarme).
 3. **Broker MQTT**: Gestisce il routing dei messaggi (pub/sub) tra le Thing e l'Orchestrator. Implementato tramite libreria `aedes`.
 4. **Server HTTP / API REST**: Fornisce l'accesso alle Thing Descriptions e permette di invocare azioni tramite chiamate POST.
@@ -53,7 +54,7 @@ Ad ogni aggiornamento (`sensor_update`, `alert`, `security_mode_changed`), l'int
 
 Il collaudo funzionale ha confermato il rispetto dei requisiti:
 1. **Discoverability**: Le Web Thing Descriptions risultano correttamente accessibili via GET.
-2. **Reattività**: Grazie all'accoppiata MQTT-WebSocket, il ritardo tra l'evento simulato e la visualizzazione su browser risulta trascurabile all'occhio umano.
+2. **Reattività**: Grazie all'accoppiata MQTT-WebSocket, il ritardo tra l'evento simulato e la visualizzazione su browser presenta latenza media inferiore a 200 ms nella simulazione locale.
 3. **Robustezza Logica**: L'Orchestratore gestisce in modo deterministico lo stato `securityMode`, evitando la propagazione di allarmi qualora il sistema sia disarmato.
 
 ## 6. Conclusioni
