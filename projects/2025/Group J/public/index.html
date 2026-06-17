@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Home Security System - WoT</title>
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --success-color: #27ae60;
+      --warning-color: #f39c12;
+      --danger-color: #e74c3c;
+      --light-bg: #ecf0f1;
+      --card-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f5f7; min-height: 100vh; color: #333; }
+    .container { max-width: 1200px; margin: 0 auto; background: #f4f5f7; overflow: hidden; }
+    header { background: linear-gradient(135deg, #1e3a5f 0%, #2c5d8f 50%, #3a7bbf 100%); color: white; padding: 28px 30px; display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 2px 12px rgba(30,58,95,0.25); }
+    .header-left { display: flex; align-items: center; gap: 18px; }
+    .header-icon { width: 56px; height: 56px; flex-shrink: 0; }
+    header h1 { font-size: 1.9em; font-weight: 700; color: white; letter-spacing: 0.3px; }
+    header p { font-size: 0.95em; color: rgba(255,255,255,0.85); margin-top: 2px; }
+    main { padding: 30px; }
+    .section { background: #eceef1; border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: var(--card-shadow); }
+    .section h2 { color: var(--primary-color); margin-bottom: 15px; border-bottom: 3px solid var(--secondary-color); padding-bottom: 10px; font-size: 1.2em; }
+    .btn { padding: 11px 22px; border: 2px solid transparent; border-radius: 8px; font-size: 0.95em; font-weight: bold; cursor: pointer; transition: all 0.2s ease; background: white; }
+    .btn:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-activate { background: white; color: var(--success-color); border-color: var(--success-color); box-shadow: 0 0 12px rgba(39,174,96,0.5), 0 0 4px rgba(39,174,96,0.3); }
+    .btn-activate:hover:not(:disabled) { background: var(--success-color); color: white; box-shadow: 0 0 18px rgba(39,174,96,0.75), 0 0 6px rgba(39,174,96,0.5); }
+    .btn-deactivate { background: white; color: var(--warning-color); border-color: var(--warning-color); box-shadow: 0 0 12px rgba(243,156,18,0.5), 0 0 4px rgba(243,156,18,0.3); }
+    .btn-deactivate:hover:not(:disabled) { background: var(--warning-color); color: white; box-shadow: 0 0 18px rgba(243,156,18,0.75), 0 0 6px rgba(243,156,18,0.5); }
+    .btn-trigger { background: white; color: var(--danger-color); border-color: var(--danger-color); box-shadow: 0 0 12px rgba(231,76,60,0.5), 0 0 4px rgba(231,76,60,0.3); }
+    .btn-trigger:hover:not(:disabled) { background: var(--danger-color); color: white; box-shadow: 0 0 18px rgba(231,76,60,0.75), 0 0 6px rgba(231,76,60,0.5); }
+    .btn-reset { background: white; color: var(--secondary-color); border-color: var(--secondary-color); box-shadow: 0 0 12px rgba(52,152,219,0.5), 0 0 4px rgba(52,152,219,0.3); }
+    .btn-reset:hover:not(:disabled) { background: var(--secondary-color); color: white; box-shadow: 0 0 18px rgba(52,152,219,0.75), 0 0 6px rgba(52,152,219,0.5); }
+    .status-badge { padding: 10px 18px 10px 20px; border-radius: 24px; font-weight: bold; font-size: 1em; display: inline-flex; align-items: center; gap: 14px; background: #d9dce0; color: #444; }
+    .status-badge .toggle-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--success-color); transition: all 0.2s ease; box-shadow: 0 0 10px rgba(39,174,96,0.8); }
+    .status-badge.active .toggle-dot { background: var(--danger-color); animation: pulse 1s infinite; box-shadow: 0 0 12px rgba(231,76,60,0.9); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+    .status-card { background: white; padding: 15px; border-radius: 8px; border: 2px solid var(--success-color); text-align: center; box-shadow: 0 0 16px rgba(39,174,96,0.55), 0 0 4px rgba(39,174,96,0.35); transition: box-shadow 0.2s ease; }
+    .status-card.neutral { border-color: var(--secondary-color); box-shadow: 0 0 16px rgba(52,152,219,0.55), 0 0 4px rgba(52,152,219,0.35); }
+    .status-value { font-size: 1.2em; font-weight: bold; color: #2c3e50; display: block; margin-top: 5px; }
+    .control-panel { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .action-buttons { display: flex; gap: 10px; }
+    .alerts-container { max-height: 450px; overflow-y: auto; background: white; border-radius: 6px; padding: 15px; }
+    .alert-item { padding: 12px; border-left: 4px solid var(--secondary-color); margin-bottom: 10px; background: #f8f9fa; border-radius: 4px; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .alert-item.critical { border-left-color: var(--danger-color); background: #fadbd8; }
+    .alert-item.warning { border-left-color: var(--warning-color); background: #fdebd0; }
+    .alert-item.info { border-left-color: var(--secondary-color); background: #d6eaf8; }
+    .empty-message { color: #999; font-style: italic; text-align: center; padding: 20px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+    .info-item { background: white; padding: 15px; border-radius: 6px; border: 1px solid #ddd; }
+    .info-item strong { display: block; color: var(--primary-color); margin-bottom: 5px; }
+    .info-item span { color: var(--secondary-color); font-family: monospace; font-size: 0.9em; }
+    .status-indicator { padding: 5px 12px; border-radius: 12px; font-size: 0.9em; display: inline-block; }
+    .status-indicator.connected { background: #d4edda; color: #155724; }
+    .status-indicator.disconnected { background: #f8d7da; color: #721c24; }
+    .log-entry { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 0.9em; background: #f8f9fa; border-left: 3px solid #ddd; }
+    .log-entry:last-child { margin-bottom: 0; }
+    .log-entry.log-alert { background: #fff0f0; border-left-color: var(--danger-color); }
+    .log-entry.log-sensor { background: #f0faf4; border-left-color: var(--success-color); }
+    .log-entry.log-ws { background: #f0f6ff; border-left-color: var(--secondary-color); }
+    .log-icon { font-size: 1em; flex-shrink: 0; margin-top: 1px; }
+    .log-body { flex: 1; color: #333; line-height: 1.4; }
+    .log-label { font-weight: bold; margin-right: 5px; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.4px; color: #666; }
+    .log-entry.log-alert .log-label { color: var(--danger-color); }
+    .log-entry.log-sensor .log-label { color: var(--success-color); }
+    .log-entry.log-ws .log-label { color: var(--secondary-color); }
+    .log-time { font-size: 0.8em; color: #aaa; flex-shrink: 0; margin-top: 2px; white-space: nowrap; }
+    .btn-sim-door { background: white; color: #8e44ad; border-color: #8e44ad; box-shadow: 0 0 12px rgba(142,68,173,0.4); }
+    .btn-sim-door:hover:not(:disabled) { background: #8e44ad; color: white; box-shadow: 0 0 18px rgba(142,68,173,0.7); }
+    .btn-sim-window { background: white; color: #16a085; border-color: #16a085; box-shadow: 0 0 12px rgba(22,160,133,0.4); }
+    .btn-sim-window:hover:not(:disabled) { background: #16a085; color: white; box-shadow: 0 0 18px rgba(22,160,133,0.7); }
+    .btn-sim-motion { background: white; color: #d35400; border-color: #d35400; box-shadow: 0 0 12px rgba(211,84,0,0.4); }
+    .btn-sim-motion:hover:not(:disabled) { background: #d35400; color: white; box-shadow: 0 0 18px rgba(211,84,0,0.7); }
+    /* Alarm banner overlay */
+    #alarmBanner { display: none; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999; background: #c0392b; color: white; padding: 18px 30px; text-align: center; font-size: 1.15em; font-weight: bold; letter-spacing: 0.5px; box-shadow: 0 4px 20px rgba(192,57,43,0.6); }
+    #alarmBanner.show { display: flex; align-items: center; justify-content: center; gap: 16px; animation: bannerPulse 0.8s infinite; }
+    @keyframes bannerPulse { 0%, 100% { background: #c0392b; } 50% { background: #e74c3c; } }
+    #alarmBanner .banner-dismiss { background: white; color: #c0392b; border: none; border-radius: 6px; padding: 6px 16px; font-weight: bold; cursor: pointer; font-size: 0.9em; flex-shrink: 0; }
+    #alarmBanner .banner-dismiss:hover { background: #f0f0f0; }
+    /* Alarm card active state */
+    .status-card.alarm-active { border-color: var(--danger-color) !important; animation: cardAlarm 0.8s infinite; }
+    @keyframes cardAlarm { 0%, 100% { box-shadow: 0 0 20px rgba(231,76,60,0.8); } 50% { box-shadow: 0 0 38px rgba(231,76,60,1); } }
+    .status-card.alarm-active .status-value { color: var(--danger-color); }
+    footer { background: white; color: #6b7280; text-align: center; padding: 20px; border-top: 1px solid #e3e6ea; font-size: 0.9em; }
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items: flex-start; gap: 14px; }
+      header h1 { font-size: 1.5em; }
+      main { padding: 15px; }
+      .action-buttons { flex-direction: column; width: 100%; }
+      .action-buttons .btn { width: 100%; }
+      .status-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="alarmBanner">
+    🚨 ALLARME ATTIVATO — Intrusione rilevata!
+    <button class="banner-dismiss" onclick="dismissBanner()">✕ Chiudi</button>
+  </div>
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <svg class="header-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 30 L32 8 L58 30" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M14 26 L14 54 L50 54 L50 26" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M32 30 C26 32 24 36 24 40 C24 46 28 49 32 51 C36 49 40 46 40 40 C40 36 38 32 32 30 Z" stroke="white" stroke-width="2.5" stroke-linejoin="round"/>
+        </svg>
+        <div>
+          <h1>Smart Home Security System</h1>
+          <p>Web of Things - Dashboard di Controllo e Monitoraggio</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Security Mode Section -->
+      <section class="section">
+        <h2>Modalità Sicurezza (Away Mode)</h2>
+        <div class="control-panel">
+          <div style="flex: 1;">
+            <span id="securityModeStatus" class="status-badge inactive">DISATTIVATA <span class="toggle-dot"></span></span>
+          </div>
+          <div class="action-buttons">
+            <button id="activateBtn" class="btn btn-activate">Attiva Sicurezza</button>
+            <button id="deactivateBtn" class="btn btn-deactivate" disabled>Disattiva Sicurezza</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Status Section -->
+      <section class="section">
+        <h2>Stato Sensori in Tempo Reale</h2>
+        <div class="status-grid">
+          <div class="status-card">
+            <strong>Porta</strong>
+            <span id="doorStatus" class="status-value">Chiusa</span>
+          </div>
+          <div class="status-card">
+            <strong>Finestre</strong>
+            <span id="windowStatus" class="status-value">Chiuse</span>
+          </div>
+          <div class="status-card neutral">
+            <strong>Movimento</strong>
+            <span id="motionStatus" class="status-value">Inattivo</span>
+          </div>
+          <div class="status-card neutral" id="alarmCard">
+            <strong>Allarme</strong>
+            <span id="alarmStatus" class="status-value">Disattivato</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sensor Simulation Section -->
+      <section class="section">
+        <h2>Simulazione Sensori</h2>
+        <div class="action-buttons" style="flex-wrap: wrap; gap: 12px;">
+          <button id="simDoorBtn" class="btn btn-sim-door">🚪 Simula Apertura Porta</button>
+          <button id="simWindowBtn" class="btn btn-sim-window">🪟 Simula Apertura Finestra</button>
+          <button id="simMotionBtn" class="btn btn-sim-motion">🏃 Simula Movimento Rilevato</button>
+        </div>
+        <p style="margin-top: 12px; font-size: 0.85em; color: #888;">Se la Modalità Sicurezza è attiva, ogni simulazione attiverà notifica e allarme automaticamente.</p>
+      </section>
+
+      <!-- Alarm Control Section -->
+      <section class="section">
+        <h2>Controllo Allarme</h2>
+        <div class="action-buttons">
+          <button id="triggerAlarmBtn" class="btn btn-trigger">Attiva Allarme Manuale</button>
+          <button id="resetAlarmBtn" class="btn btn-reset">Reset Allarme</button>
+        </div>
+      </section>
+
+      <!-- Registro Attività -->
+      <section class="section">
+        <h2>📋 Registro Attività <span id="logCount" style="font-size:0.75em; color:#999; font-weight:normal;"></span></h2>
+        <div id="logContainer" class="alerts-container">
+          <p class="empty-message">In attesa di eventi...</p>
+        </div>
+      </section>
+
+      <!-- Stato Connessione -->
+      <section class="section">
+        <h2>Stato Connessione</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <strong>WebSocket:</strong>
+            <span id="wsStatus" class="status-indicator disconnected">Disconnesso</span>
+          </div>
+          <div class="info-item">
+            <strong>MQTT Broker:</strong>
+            <span>mqtt://localhost:1883</span>
+          </div>
+          <div class="info-item">
+            <strong>HTTP Server:</strong>
+            <span>http://localhost:3000</span>
+          </div>
+          <div class="info-item">
+            <strong>Ultimo aggiornamento:</strong>
+            <span id="lastUpdate">--:--:--</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Smart Home Security System - Web of Things</p>
+    </footer>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CONFIGURAZIONE ====================
+    const API_BASE = 'http://localhost:3000';
+    const WS_URL = 'ws://localhost:3000';
+    
+    let ws = null;
+    let logs = [];
+    let securityMode = false;
+
+    // ==================== INIZIALIZZAZIONE ====================
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Dashboard caricata');
+      initializeEventListeners();
+      connectWebSocket();
+      updateStatus();
+      setInterval(updateStatus, 3000);
+    });
+
+    function initializeEventListeners() {
+      document.getElementById('activateBtn').addEventListener('click', activateSecurityMode);
+      document.getElementById('deactivateBtn').addEventListener('click', deactivateSecurityMode);
+      document.getElementById('triggerAlarmBtn').addEventListener('click', triggerAlarm);
+      document.getElementById('resetAlarmBtn').addEventListener('click', resetAlarm);
+      document.getElementById('simDoorBtn').addEventListener('click', simulateDoor);
+      document.getElementById('simWindowBtn').addEventListener('click', simulateWindow);
+      document.getElementById('simMotionBtn').addEventListener('click', simulateMotion);
+    }
+
+    // ==================== WEBSOCKET ====================
+
+    function connectWebSocket() {
+      try {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = () => {
+          console.log('WebSocket connesso');
+          addLog('ws', 'WebSocket connesso al server');
+          updateWSStatus(true);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleWebSocketMessage(data);
+          } catch (err) {
+            console.error('Errore parsing WebSocket:', err);
+          }
+        };
+
+        ws.onclose = () => {
+          console.log('WebSocket disconnesso');
+          addLog('ws', 'WebSocket disconnesso');
+          updateWSStatus(false);
+          setTimeout(connectWebSocket, 3000);
+        };
+
+        ws.onerror = (err) => {
+          console.error('Errore WebSocket:', err);
+          updateWSStatus(false);
+        };
+      } catch (err) {
+        console.error('Errore connessione WebSocket:', err);
+        updateWSStatus(false);
+      }
+    }
+
+    function handleWebSocketMessage(data) {
+      const timestamp = new Date().toLocaleTimeString('it-IT');
+
+      switch (data.type) {
+        case 'connection':
+          addLog('ws', data.message);
+          break;
+
+        case 'log':
+          addLog(data.category, data.message);
+          break;
+
+        case 'security_mode_changed':
+          securityMode = data.securityMode;
+          updateSecurityModeUI();
+          addLog('ws', `Modalità Sicurezza: ${data.securityMode ? 'ATTIVATA' : 'DISATTIVATA'}`);
+          break;
+
+        case 'sensor_update':
+          handleSensorUpdate(data);
+          break;
+
+        case 'alert':
+          addAlert(data.alert);
+          addLog('alert', `ALERT: ${data.alert.message}`);
+          break;
+      }
+
+      updateLastUpdate();
+    }
+
+    function handleSensorUpdate(data) {
+      const sensorName = {
+        'door': 'Porta',
+        'window': 'Finestra',
+        'motion': 'Movimento'
+      }[data.sensor];
+
+      addLog('sensor', `${sensorName}: ${data.state ? 'EVENTO' : 'OK'}`);
+      
+      if (data.sensor === 'door') {
+        document.getElementById('doorStatus').textContent = data.state ? 'Aperta' : 'Chiusa';
+      } else if (data.sensor === 'window') {
+        document.getElementById('windowStatus').textContent = data.state ? 'Aperte' : 'Chiuse';
+      } else if (data.sensor === 'motion') {
+        document.getElementById('motionStatus').textContent = data.state ? 'Rilevato' : 'Inattivo';
+      }
+    }
+
+    // ==================== STATUS UPDATES ====================
+
+    async function updateStatus() {
+      try {
+        const response = await fetch(`${API_BASE}/api/status`);
+        if (!response.ok) throw new Error('Failed to fetch status');
+        const data = await response.json();
+
+        securityMode = data.securityMode;
+        updateSecurityModeUI();
+        const triggered = data.alarmStatus === 'TRIGGERED';
+        document.getElementById('alarmStatus').textContent = triggered ? 'ATTIVATO' : 'Disattivato';
+        setAlarmUI(triggered);
+        updateLastUpdate();
+      } catch (err) {
+        console.error('Errore aggiornamento status:', err);
+      }
+    }
+
+    function updateSecurityModeUI() {
+      const badge = document.getElementById('securityModeStatus');
+      const activateBtn = document.getElementById('activateBtn');
+      const deactivateBtn = document.getElementById('deactivateBtn');
+
+      if (securityMode) {
+        badge.innerHTML = 'ATTIVATA <span class="toggle-dot"></span>';
+        badge.className = 'status-badge active';
+        activateBtn.disabled = true;
+        deactivateBtn.disabled = false;
+      } else {
+        badge.innerHTML = 'DISATTIVATA <span class="toggle-dot"></span>';
+        badge.className = 'status-badge inactive';
+        activateBtn.disabled = false;
+        deactivateBtn.disabled = true;
+      }
+    }
+
+    function updateWSStatus(connected) {
+      const indicator = document.getElementById('wsStatus');
+      if (connected) {
+        indicator.textContent = 'Connesso';
+        indicator.className = 'status-indicator connected';
+      } else {
+        indicator.textContent = 'Disconnesso';
+        indicator.className = 'status-indicator disconnected';
+      }
+    }
+
+    function updateLastUpdate() {
+      document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('it-IT');
+    }
+
+    // ==================== ALARM UI ====================
+
+    let bannerDismissed = false;
+
+    function setAlarmUI(active) {
+      const card = document.getElementById('alarmCard');
+      const banner = document.getElementById('alarmBanner');
+      if (active) {
+        card.classList.add('alarm-active');
+        if (!bannerDismissed) banner.classList.add('show');
+      } else {
+        card.classList.remove('alarm-active');
+        banner.classList.remove('show');
+        bannerDismissed = false;
+      }
+    }
+
+    function dismissBanner() {
+      document.getElementById('alarmBanner').classList.remove('show');
+      bannerDismissed = true;
+    }
+
+    // ==================== AZIONI ====================
+
+    async function activateSecurityMode() {
+      try {
+        await fetch(`${API_BASE}/orchestrator/actions/activateSecurityMode`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (err) { console.error('Errore:', err); }
+    }
+
+    async function deactivateSecurityMode() {
+      try {
+        await fetch(`${API_BASE}/orchestrator/actions/deactivateSecurityMode`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (err) { console.error('Errore:', err); }
+    }
+
+    async function triggerAlarm() {
+      try {
+        await fetch(`${API_BASE}/things/alarm-system/actions/triggerAlarm`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }
+        });
+      } catch (err) { console.error('Errore:', err); }
+    }
+
+    async function resetAlarm() {
+      try {
+        await fetch(`${API_BASE}/things/alarm-system/actions/resetAlarm`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }
+        });
+        document.getElementById('alarmStatus').textContent = 'Disattivato';
+        setAlarmUI(false);
+      } catch (err) { console.error('Errore:', err); }
+    }
+
+    // ==================== SIMULAZIONE SENSORI (TOGGLE) ====================
+
+    const simState = { door: false, window: false, motion: false };
+
+    async function simulateDoor() {
+      const btn = document.getElementById('simDoorBtn');
+      const newState = !simState.door;
+      try {
+        await fetch(`${API_BASE}/things/door-sensor/actions/setOpen`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: newState })
+        });
+        simState.door = newState;
+        document.getElementById('doorStatus').textContent = newState ? 'Aperta' : 'Chiusa';
+        btn.textContent = newState ? 'Chiudi Porta' : 'Simula Apertura Porta';
+        btn.style.background = newState ? '#8e44ad' : '';
+        btn.style.color = newState ? 'white' : '';
+      } catch (err) { console.error('Errore simulazione porta:', err); }
+    }
+
+    async function simulateWindow() {
+      const btn = document.getElementById('simWindowBtn');
+      const newState = !simState.window;
+      try {
+        await fetch(`${API_BASE}/things/window-sensor/actions/setOpen`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: newState })
+        });
+        simState.window = newState;
+        document.getElementById('windowStatus').textContent = newState ? 'Aperte' : 'Chiuse';
+        btn.textContent = newState ? 'Chiudi Finestra' : 'Simula Apertura Finestra';
+        btn.style.background = newState ? '#16a085' : '';
+        btn.style.color = newState ? 'white' : '';
+      } catch (err) { console.error('Errore simulazione finestra:', err); }
+    }
+
+    async function simulateMotion() {
+      const btn = document.getElementById('simMotionBtn');
+      const newState = !simState.motion;
+      try {
+        await fetch(`${API_BASE}/things/motion-sensor/actions/setMotionDetected`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: newState })
+        });
+        simState.motion = newState;
+        document.getElementById('motionStatus').textContent = newState ? 'Rilevato' : 'Inattivo';
+        btn.textContent = newState ? 'Ferma Movimento' : 'Simula Movimento Rilevato';
+        btn.style.background = newState ? '#d35400' : '';
+        btn.style.color = newState ? 'white' : '';
+      } catch (err) { console.error('Errore simulazione movimento:', err); }
+    }
+
+    // ==================== VISUALIZZAZIONE ====================
+
+    function addAlert(alert) {
+      const severity = alert.severity || 'info';
+      const prefix = severity === 'critical' ? '⚠️ CRITICO' : severity === 'warning' ? '⚠️ Attenzione' : 'ℹ️ Info';
+      addLog('alert', `${prefix}: ${alert.message}`);
+    }
+
+    function addLog(category, message) {
+      const time = new Date().toLocaleTimeString('it-IT');
+      logs.push({ category, text: message, time });
+      displayLogs();
+      const c = document.getElementById('logContainer');
+      c.scrollTop = c.scrollHeight;
+    }
+
+    function displayLogs() {
+      const container = document.getElementById('logContainer');
+      const counter = document.getElementById('logCount');
+      counter.textContent = logs.length ? `— ${logs.length} eventi` : '';
+      if (!logs.length) {
+        container.innerHTML = '<p class="empty-message">In attesa di eventi...</p>';
+        return;
+      }
+      const icons = { ws: '🔗', alert: '🚨', sensor: '📡' };
+      const labels = { ws: 'Sistema', alert: 'Allarme', sensor: 'Sensore' };
+      container.innerHTML = logs
+        .filter(log => log.category !== 'ws')
+        .map(log => `
+          <div class="log-entry log-${log.category}">
+            <span class="log-icon">${icons[log.category] || '•'}</span>
+            <span class="log-body">
+              <span class="log-label">${labels[log.category] || ''}</span>
+              ${log.text}
+            </span>
+            <span class="log-time">${log.time}</span>
+          </div>
+        `)
+        .join('');
+    }
+  </script>
+</body>
+</html>

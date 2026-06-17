@@ -1,0 +1,199 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "wot": "https://www.w3.org/2019/wot/td#",
+    "td": "https://www.w3.org/2019/wot/td#",
+    "hctl": "https://www.w3.org/2019/wot/hypermedia#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "proj": "urn:wot:home-security-ontology#",
+
+    "subClassOf": { "@id": "rdfs:subClassOf", "@type": "@id" },
+    "domain": { "@id": "rdfs:domain", "@type": "@id" },
+    "range": { "@id": "rdfs:range", "@type": "@id" },
+    "comment": "rdfs:comment",
+    "label": "rdfs:label"
+  },
+
+  "@graph": [
+
+    {
+      "@id": "proj:Thing",
+      "@type": "owl:Class",
+      "subClassOf": "td:Thing",
+      "label": "Thing",
+      "comment": "Classe radice. Ogni dispositivo o servizio del sistema e' esposto come WoT Thing con una propria Thing Description (id, title, type, description, securityDefinitions). L'id e' generato a runtime tramite uuidv4()."
+    },
+    {
+      "@id": "proj:Sensor",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Thing",
+      "label": "Sensor",
+      "comment": "Thing che osserva lo stato dell'ambiente. Espone solo Property in lettura (readOnly) ed Event generati al cambio di stato. Non espone Action. Istanze: DoorSensor, WindowSensor, MotionSensor."
+    },
+    {
+      "@id": "proj:Actuator",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Thing",
+      "label": "Actuator",
+      "comment": "Thing che mantiene uno stato osservabile (Property readOnly) ma il cui stato viene modificato tramite Action invocate da un Consumer, non da letture esterne. Genera Event quando lo stato cambia. Istanza: AlarmSystem."
+    },
+    {
+      "@id": "proj:Service",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Thing",
+      "label": "Service",
+      "comment": "Thing senza stato persistente esposto come Property: espone solo Action invocabili e genera Event a fronte dell'esecuzione. Istanza: NotificationService."
+    },
+    {
+      "@id": "proj:Consumer",
+      "@type": "owl:Class",
+      "label": "Consumer",
+      "comment": "Ruolo che consuma le interaction affordance delle Thing (legge Property, invoca Action, si sottoscrive a Event) senza essere a sua volta esposto come Thing con una propria Thing Description. Istanza: Orchestrator."
+    },
+
+    {
+      "@id": "proj:InteractionAffordance",
+      "@type": "owl:Class",
+      "subClassOf": "td:InteractionAffordance",
+      "label": "InteractionAffordance",
+      "comment": "Classe astratta per le tre forme di interazione WoT esposte da una Thing tramite la sua Thing Description."
+    },
+    {
+      "@id": "proj:Property",
+      "@type": "owl:Class",
+      "subClassOf": ["proj:InteractionAffordance", "td:PropertyAffordance"],
+      "label": "Property",
+      "comment": "Espone lo stato corrente di una Thing. Nel progetto tutte le Property sono readOnly: il loro valore cambia solo internamente alla Thing, non via scrittura esterna."
+    },
+    {
+      "@id": "proj:Action",
+      "@type": "owl:Class",
+      "subClassOf": ["proj:InteractionAffordance", "td:ActionAffordance"],
+      "label": "Action",
+      "comment": "Operazione invocabile su una Thing che ne modifica lo stato o produce un effetto (es. invio notifica)."
+    },
+    {
+      "@id": "proj:Event",
+      "@type": "owl:Class",
+      "subClassOf": ["proj:InteractionAffordance", "td:EventAffordance"],
+      "label": "Event",
+      "comment": "Notifica asincrona generata da una Thing al verificarsi di una condizione, distribuita via publish/subscribe MQTT."
+    },
+
+    {
+      "@id": "proj:ProtocolBinding",
+      "@type": "owl:Class",
+      "label": "ProtocolBinding",
+      "comment": "Meccanismo di trasporto con cui una InteractionAffordance e' raggiungibile, descritto nel campo forms della Thing Description."
+    },
+    {
+      "@id": "proj:HTTPBinding",
+      "@type": "owl:Class",
+      "subClassOf": "proj:ProtocolBinding",
+      "label": "HTTPBinding",
+      "comment": "Usato per operazioni sincrone request/response: readproperty sulle Property, invokeaction sulle Action."
+    },
+    {
+      "@id": "proj:MQTTBinding",
+      "@type": "owl:Class",
+      "subClassOf": "proj:ProtocolBinding",
+      "label": "MQTTBinding",
+      "comment": "Usato per la distribuzione asincrona degli Event tramite publish/subscribe (operazione subscribeevent)."
+    },
+
+    {
+      "@id": "proj:exposesProperty",
+      "@type": "owl:ObjectProperty",
+      "domain": "proj:Thing",
+      "range": "proj:Property",
+      "comment": "Collega una Thing a una Property che espone."
+    },
+    {
+      "@id": "proj:exposesAction",
+      "@type": "owl:ObjectProperty",
+      "domain": "proj:Thing",
+      "range": "proj:Action",
+      "comment": "Collega una Thing a una Action che espone."
+    },
+    {
+      "@id": "proj:exposesEvent",
+      "@type": "owl:ObjectProperty",
+      "domain": "proj:Thing",
+      "range": "proj:Event",
+      "comment": "Collega una Thing a un Event che puo' generare."
+    },
+    {
+      "@id": "proj:usesBinding",
+      "@type": "owl:ObjectProperty",
+      "domain": "proj:InteractionAffordance",
+      "range": "proj:ProtocolBinding",
+      "comment": "Collega una InteractionAffordance al protocol binding tramite cui e' raggiungibile (forms.href)."
+    },
+    {
+      "@id": "proj:subscribesToEvent",
+      "@type": "owl:ObjectProperty",
+      "domain": "proj:Consumer",
+      "range": "proj:Event",
+      "comment": "Il Consumer si sottoscrive a un Event di una Thing via MQTT (vedi Orchestrator.subscribeToEvents)."
+    },
+    {
+      "@id": "proj:invokesAction",
+      "@type": "owl:ObjectProperty",
+      "domain": "proj:Consumer",
+      "range": "proj:Action",
+      "comment": "Il Consumer invoca direttamente una Action su una Thing (vedi Orchestrator che chiama alarmSystem.triggerAlarm(), alarmSystem.resetAlarm() e notificationService.sendNotification())."
+    },
+    {
+      "@id": "proj:triggers",
+      "@type": "owl:ObjectProperty",
+      "domain": "proj:Event",
+      "range": "proj:Action",
+      "comment": "Relazione di causalita' applicativa mediata dall'Orchestrator: un Event in arrivo, se securityMode e' attivo, fa scattare in parallelo triggerAlarm (su AlarmSystem) e sendNotification (su NotificationService). Esempi: doorOpened -> triggerAlarm + sendNotification, windowOpened -> triggerAlarm + sendNotification, motionOccurred -> triggerAlarm + sendNotification."
+    },
+
+    {
+      "@id": "proj:DoorSensor",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Sensor",
+      "label": "DoorSensor",
+      "comment": "Property: isOpen (boolean, readOnly), lastUpdate (string ISO 8601, readOnly). Event: doorOpened (payload: timestamp, isOpen). Nessuna Action."
+    },
+    {
+      "@id": "proj:WindowSensor",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Sensor",
+      "label": "WindowSensor",
+      "comment": "Property: isOpen (boolean, readOnly), lastUpdate (string ISO 8601, readOnly). Event: windowOpened (payload: timestamp, isOpen). Nessuna Action."
+    },
+    {
+      "@id": "proj:MotionSensor",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Sensor",
+      "label": "MotionSensor",
+      "comment": "Property: motionDetected (boolean, readOnly), lastUpdate (string ISO 8601, readOnly). Event: motionOccurred (topic MQTT: events/motion-sensor/motionDetected; payload: timestamp, motionDetected). Nessuna Action."
+    },
+    {
+      "@id": "proj:AlarmSystem",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Actuator",
+      "label": "AlarmSystem",
+      "comment": "Property: alarmStatus (string enum RESET/TRIGGERED, readOnly). Action: triggerAlarm (output: timestamp, alarmStatus=TRIGGERED), resetAlarm (output: timestamp, alarmStatus=RESET). Event: alarmTriggered (payload: timestamp, alarmStatus=TRIGGERED), alarmReset (payload: timestamp, alarmStatus=RESET)."
+    },
+    {
+      "@id": "proj:NotificationService",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Service",
+      "label": "NotificationService",
+      "comment": "Nessuna Property esposta in TD (lo stato notifications e' interno). Action: sendNotification(message, severity; default severity: info) con output: id (uuid), timestamp, message, severity. Event: notificationSent (payload: id, timestamp, message, severity)."
+    },
+    {
+      "@id": "proj:Orchestrator",
+      "@type": "owl:Class",
+      "subClassOf": "proj:Consumer",
+      "label": "Orchestrator",
+      "comment": "Non e' una WoT Thing (nessuna Thing Description propria). Mantiene lo stato applicativo securityMode (boolean) e alertHistory (array). Si sottoscrive via MQTT a: doorOpened, windowOpened, motionOccurred. Se securityMode e' attivo invoca in parallelo alarmSystem.triggerAlarm() e notificationService.sendNotification() con severity critical o warning. Espone inoltre activateSecurityMode() e deactivateSecurityMode() che invocano rispettivamente sendNotification e resetAlarm."
+    }
+  ]
+}

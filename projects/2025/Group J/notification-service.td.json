@@ -1,0 +1,104 @@
+{
+  "@context": [
+    "https://www.w3.org/2022/wot/td/v1.1",
+    {
+      "@language": "it"
+    }
+  ],
+  "@type": "Thing",
+  "id": "urn:wot:notification-service:{uuid}",
+  "title": "Notification Service",
+  "description": "Servizio che simula l'invio di notifiche all'utente",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": "nosec_sc",
+  "base": "http://localhost:3000/things/notification-service/",
+  "actions": {
+    "sendNotification": {
+      "title": "Invia Notifica",
+      "description": "Invia una notifica all'utente",
+      "input": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Messaggio della notifica"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"],
+            "description": "Livello di gravità (default: info)"
+          }
+        },
+        "required": ["message"]
+      },
+      "output": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificatore univoco della notifica"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"]
+          }
+        },
+        "required": ["id", "timestamp", "message", "severity"]
+      },
+      "forms": [
+        {
+          "href": "/things/notification-service/actions/sendNotification",
+          "contentType": "application/json",
+          "op": "invokeaction"
+        }
+      ]
+    }
+  },
+  "events": {
+    "notificationSent": {
+      "title": "Notifica Inviata",
+      "description": "Evento generato quando una notifica viene inviata",
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificatore univoco della notifica"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "critical"]
+          }
+        },
+        "required": ["id", "timestamp", "message", "severity"]
+      },
+      "forms": [
+        {
+          "href": "mqtt://localhost:1883/events/notification-service/notificationSent",
+          "contentType": "application/json",
+          "op": "subscribeevent"
+        }
+      ]
+    }
+  }
+}

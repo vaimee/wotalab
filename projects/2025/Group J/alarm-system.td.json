@@ -1,0 +1,139 @@
+{
+  "@context": [
+    "https://www.w3.org/2022/wot/td/v1.1",
+    {
+      "@language": "it"
+    }
+  ],
+  "@type": "Thing",
+  "id": "urn:wot:alarm-system:{uuid}",
+  "title": "Alarm System",
+  "description": "Sistema responsabile dell'attivazione e del reset dell'allarme",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": "nosec_sc",
+  "base": "http://localhost:3000/things/alarm-system/",
+  "properties": {
+    "alarmStatus": {
+      "title": "Stato Allarme",
+      "description": "Stato dell'allarme: RESET o TRIGGERED",
+      "type": "string",
+      "enum": ["RESET", "TRIGGERED"],
+      "readOnly": true,
+      "forms": [
+        {
+          "href": "/things/alarm-system/properties/alarmStatus",
+          "contentType": "application/json",
+          "op": "readproperty"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "triggerAlarm": {
+      "title": "Attiva Allarme",
+      "description": "Attiva il sistema di allarme",
+      "output": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alarmStatus": {
+            "type": "string",
+            "enum": ["TRIGGERED"]
+          }
+        },
+        "required": ["timestamp", "alarmStatus"]
+      },
+      "forms": [
+        {
+          "href": "/things/alarm-system/actions/triggerAlarm",
+          "contentType": "application/json",
+          "op": "invokeaction"
+        }
+      ]
+    },
+    "resetAlarm": {
+      "title": "Reset Allarme",
+      "description": "Resetta il sistema di allarme",
+      "output": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alarmStatus": {
+            "type": "string",
+            "enum": ["RESET"]
+          }
+        },
+        "required": ["timestamp", "alarmStatus"]
+      },
+      "forms": [
+        {
+          "href": "/things/alarm-system/actions/resetAlarm",
+          "contentType": "application/json",
+          "op": "invokeaction"
+        }
+      ]
+    }
+  },
+  "events": {
+    "alarmTriggered": {
+      "title": "Allarme Attivato",
+      "description": "Evento generato quando l'allarme viene attivato",
+      "data": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alarmStatus": {
+            "type": "string",
+            "enum": ["TRIGGERED"]
+          }
+        },
+        "required": ["timestamp", "alarmStatus"]
+      },
+      "forms": [
+        {
+          "href": "mqtt://localhost:1883/events/alarm-system/alarmTriggered",
+          "contentType": "application/json",
+          "op": "subscribeevent"
+        }
+      ]
+    },
+    "alarmReset": {
+      "title": "Allarme Resettato",
+      "description": "Evento generato quando l'allarme viene resettato",
+      "data": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alarmStatus": {
+            "type": "string",
+            "enum": ["RESET"]
+          }
+        },
+        "required": ["timestamp", "alarmStatus"]
+      },
+      "forms": [
+        {
+          "href": "mqtt://localhost:1883/events/alarm-system/alarmReset",
+          "contentType": "application/json",
+          "op": "subscribeevent"
+        }
+      ]
+    }
+  }
+}
