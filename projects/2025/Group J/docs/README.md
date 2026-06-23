@@ -1,38 +1,30 @@
-🚀 Smart Home Security System
+Smart Home Security System
+Progetto per il corso di Automazione - Università di Bologna (Unibo)
 
-Progetto per il corso di Automazione – Università di Bologna (Unibo)
+Descrizione del Progetto
+Il progetto consiste nella progettazione e sviluppo di un sistema di sicurezza domestico simulato, basato sul paradigma Web of Things (WoT). L'architettura prevede la comunicazione in tempo reale tra un set di sensori simulati (porta, finestra, movimento), un orchestratore centrale e un'interfaccia utente web-based.
 
-📌 Descrizione
+L'infrastruttura di comunicazione sfrutta:
 
-Sistema di sicurezza domestico simulato basato su Web of Things (WoT).
-
-Componenti:
-
-sensori (porta, finestra, movimento)
-orchestratore centrale
-dashboard web
-⚙️ Comunicazione
-MQTT (1883) → eventi tra sensori e orchestratore
-HTTP (3000) → Thing Descriptions + dashboard
-WebSocket (3000) → aggiornamenti real-time UI
-📁 Repository
-src/index.js → bootstrap sistema (Express + MQTT + WS)
-src/orchestrator/ → logica di controllo eventi
-src/things/ → sensori e attuatori WoT
-public/ → dashboard web
-RELAZIONE_PROGETTO.md → documentazione tecnica
-🧰 Requisiti
-Node.js ≥ 18
-npm
-▶️ Avvio
+MQTT (Porta 1883): per lo scambio di messaggi telemetrici e comandi tra i sensori/attuatori e l'orchestratore centrale.
+HTTP (Porta 3000): per servire l'interfaccia di monitoraggio (Dashboard) ed esporre le Web Thing Descriptions.
+WebSocket (Porta 3000): per il trasferimento dati bidirezionale in tempo reale verso il client, garantendo un aggiornamento istantaneo dell'interfaccia grafica.
+Struttura della Repository
+src/index.js: Entry point dell'applicazione. Inizializza il broker MQTT, il server Express e i WebSocket.
+src/orchestrator/: Contiene la logica di controllo (Orchestratore) che analizza gli eventi e determina lo stato del sistema.
+src/things/: Implementazione dei dispositivi WoT (DoorSensor, WindowSensor, MotionSensor, AlarmSystem, NotificationService).
+public/: Contiene le risorse statiche (HTML, CSS, JS) per la Dashboard.
+RELAZIONE_PROGETTO.md: Documentazione tecnica di dettaglio e scelte progettuali.
+Requisiti di Sistema
+Node.js (versione consigliata: 18.x o superiore)
+npm (Node Package Manager)
+Istruzioni di Avvio
+Clona la repository o accedi alla directory del progetto.
+Installa le dipendenze necessarie eseguendo:
 npm install
+Avvia il sistema:
 npm start
-
-Apri:
-
+Accedi alla Dashboard aprendo un browser web al seguente indirizzo:
 http://localhost:3000
-🔄 Funzionamento
-sensori pubblicano eventi su MQTT
-orchestratore elabora eventi
-attiva allarmi/notifiche
-dashboard aggiorna UI via WebSocket
+Note sull'Esecuzione
+Una volta avviato, il sistema simulerà la pubblicazione periodica di eventi da parte dei sensori sul broker MQTT locale. Tali eventi verranno intercettati dall'orchestratore, il quale aggiornerà lo stato del sistema e inoltrerà i dati alla dashboard tramite connessione WebSocket per la visualizzazione immediata.
