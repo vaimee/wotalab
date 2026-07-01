@@ -1,0 +1,83 @@
+{
+  "@context": [
+    "https://www.w3.org/2019/wot/td/v1",
+    {
+      "sosa": "http://www.w3.org/ns/sosa/",
+      "qudt": "http://qudt.org/schema/qudt/",
+      "unit": "http://qudt.org/vocab/unit/"
+    }
+  ],
+  "id": "urn:dev:wot:greenhouse-environmental-sensor-01",
+  "title": "Sensore Ambientale Serra",
+  "@type": "sosa:Sensor",
+  "description": "Un nodo sensore ambientale che monitora la temperatura e l'umidità del suolo all'interno di una serra intelligente.",
+  "securityDefinitions": {
+    "nosec_sc": {
+      "scheme": "nosec"
+    }
+  },
+  "security": [
+    "nosec_sc"
+  ],
+  "properties": {
+    "temperature": {
+      "type": "number",
+      "title": "Temperatura Ambientale",
+      "description": "La temperatura ambientale misurata all'interno della serra.",
+      "qudt:unit": "unit:DEG_C",
+      "minimum": 20.0,
+      "maximum": 35.0,
+      "readOnly": true
+    },
+    "humidity": {
+      "type": "number",
+      "title": "Umidità del Suolo",
+      "description": "Il contenuto di umidità misurato nel suolo.",
+      "qudt:unit": "unit:PERCENT",
+      "minimum": 10.0,
+      "maximum": 60.0,
+      "readOnly": true
+    },
+    "activeGreenhouse": {
+      "type": "string",
+      "title": "Tipo di Serra Attivo",
+      "description": "Il tipo di serra attivo che determina i parametri di automazione (es. 'tropical' o 'mediterranean').",
+      "enum": ["tropical", "mediterranean"],
+      "readOnly": false
+    }
+  },
+  "events": {
+    "environmentalData": {
+      "description": "Evento emesso periodicamente contenente le osservazioni di temperatura e umidità del suolo.",
+      "data": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "title": "Temperatura Ambientale",
+            "description": "La temperatura ambientale misurata all'interno della serra.",
+            "qudt:unit": "unit:DEG_C",
+            "minimum": 20.0,
+            "maximum": 35.0
+          },
+          "humidity": {
+            "type": "number",
+            "title": "Umidità del Suolo",
+            "description": "Il contenuto di umidità misurato nel suolo.",
+            "qudt:unit": "unit:PERCENT",
+            "minimum": 10.0,
+            "maximum": 60.0
+          }
+        },
+        "required": ["temperature", "humidity"]
+      },
+      "forms": [
+        {
+          "href": "mqtt://localhost:1883/greenhouse/sensors/environmental/data",
+          "op": ["subscribeevent"],
+          "contentType": "application/json"
+        }
+      ]
+    }
+  }
+}
