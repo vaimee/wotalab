@@ -1,6 +1,16 @@
 /**
  * Application Entry Point
  * Smart Home Security System - Web of Things
+ *
+ * Modifiche rispetto alla versione precedente:
+ * - ogni Thing ora espone se stessa come vero WoT Producer (node-wot) su una
+ *   porta HTTP dedicata, quindi riceve un'opzione { httpPort } in più.
+ * - getThingDescription() delle Thing è ora asincrono (l'esposizione WoT lo
+ *   è), quindi le route che restituiscono la TD usano await.
+ * - tutto il resto (route Express verso la dashboard, logica applicativa,
+ *   MQTT client/broker per gli eventi legacy) resta invariato: l'Orchestrator
+ *   in questo step non è ancora stato toccato, verrà convertito a Consumer
+ *   WoT nel prossimo passaggio.
  */
 
 const express = require('express');
@@ -22,6 +32,16 @@ const app = express();
 const HTTP_PORT = 3000;
 const MQTT_PORT = 1883;
 
+// Porte HTTP dedicate a ciascuna Thing (ora ogni Thing è un Producer WoT
+// indipendente, con il proprio endpoint generato da node-wot).
+const THING_PORTS = {
+  doorSensor: 3001,
+  windowSensor: 3002,
+  motionSensor: 3003,
+  alarmSystem: 3004,
+  notificationService: 3005
+};
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -31,28 +51,38 @@ console.log('\n' + '='.repeat(60));
 console.log('Smart Home Security System - Web of Things');
 console.log('='.repeat(60) + '\n');
 
-// MQTT Broker Setup (Aedes)
+// MQTT Broker Setup (Aedes) - usato per gli eventi legacy in attesa
+// che l'Orchestrator diventi un vero Consumer WoT (prossimo step).
 let broker;
 let mqttServer;
 let mqttClient;
 let doorSensor, windowSensor, motionSensor, alarmSystem, notificationService, orchestrator;
 
-// broadcast viene definita dopo la creazione del server HTTP,
-// ma le Things la ricevono solo dopo la connessione MQTT (che avviene dopo)
 let broadcast = () => {};
 
-function setupMqttClient(client) {
-  client.on('connect', () => {
+async function setupMqttClient(client) {
+  client.on('connect', async () => {
     console.log('✓ [MQTT Client] Connesso al broker');
 
-    doorSensor = new DoorSensor(client);
-    windowSensor = new WindowSensor(client);
-    motionSensor = new MotionSensor(client);
-    alarmSystem = new AlarmSystem(client, broadcast);
-    notificationService = new NotificationService(client, broadcast);
+    doorSensor = new DoorSensor(client, { httpPort: THING_PORTS.doorSensor });
+    windowSensor = new WindowSensor(client, { httpPort: THING_PORTS.windowSensor });
+    motionSensor = new MotionSensor(client, { httpPort: THING_PORTS.motionSensor });
+    alarmSystem = new AlarmSystem(client, broadcast, { httpPort: THING_PORTS.alarmSystem });
+    notificationService = new NotificationService(client, broadcast, { httpPort: THING_PORTS.notificationService });
+
+    // Attende che ogni Thing abbia finito di esporsi come Producer WoT
+    // (Servient + HTTP binding avviati, TD generata) prima di segnalarla pronta.
+    await Promise.all([
+      doorSensor.ready,
+      windowSensor.ready,
+      motionSensor.ready,
+      alarmSystem.ready,
+      notificationService.ready
+    ]);
+
     orchestrator = new Orchestrator(client, alarmSystem, notificationService, broadcast);
-    
-    console.log('✓ [System] Tutte le Things inizializzate');
+
+    console.log('✓ [System] Tutte le Things esposte come veri WoT Producer');
     console.log('✓ [System] Orchestrator attivo\n');
   });
 
@@ -104,8 +134,8 @@ function ensureInitialized(res) {
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     services: {
       mqtt: mqttClient && mqttClient.connected ? 'connected' : 'disconnected',
@@ -115,30 +145,34 @@ app.get('/health', (req, res) => {
 });
 
 // ==================== Thing Description Routes ====================
+// Ora proxano la TD reale generata da node-wot (asincrona), invece del
+// JSON statico di prima. Restano comunque raggiungibili da qui per comodità
+// della dashboard; la TD "autorevole" resta comunque quella esposta
+// direttamente dalla Thing sulla propria porta (es. http://localhost:3004/alarm-system).
 
-app.get('/things/door-sensor/td', (req, res) => {
+app.get('/things/door-sensor/td', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  res.json(doorSensor.getThingDescription());
+  res.json(await doorSensor.getThingDescription());
 });
 
-app.get('/things/window-sensor/td', (req, res) => {
+app.get('/things/window-sensor/td', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  res.json(windowSensor.getThingDescription());
+  res.json(await windowSensor.getThingDescription());
 });
 
-app.get('/things/motion-sensor/td', (req, res) => {
+app.get('/things/motion-sensor/td', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  res.json(motionSensor.getThingDescription());
+  res.json(await motionSensor.getThingDescription());
 });
 
-app.get('/things/alarm-system/td', (req, res) => {
+app.get('/things/alarm-system/td', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  res.json(alarmSystem.getThingDescription());
+  res.json(await alarmSystem.getThingDescription());
 });
 
-app.get('/things/notification-service/td', (req, res) => {
+app.get('/things/notification-service/td', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  res.json(notificationService.getThingDescription());
+  res.json(await notificationService.getThingDescription());
 });
 
 // ==================== Door Sensor Properties ====================
@@ -291,11 +325,11 @@ app.get('/api/things', (req, res) => {
   if (!ensureInitialized(res)) return;
   res.json({
     things: [
-      { id: 'door-sensor', title: 'Door Sensor', type: 'Sensor', uri: '/things/door-sensor/td' },
-      { id: 'window-sensor', title: 'Window Sensor', type: 'Sensor', uri: '/things/window-sensor/td' },
-      { id: 'motion-sensor', title: 'Motion Sensor', type: 'Sensor', uri: '/things/motion-sensor/td' },
-      { id: 'alarm-system', title: 'Alarm System', type: 'Actuator', uri: '/things/alarm-system/td' },
-      { id: 'notification-service', title: 'Notification Service', type: 'Service', uri: '/things/notification-service/td' }
+      { id: 'door-sensor', title: 'Door Sensor', type: 'Sensor', uri: '/things/door-sensor/td', wotUri: `http://localhost:${THING_PORTS.doorSensor}/door-sensor` },
+      { id: 'window-sensor', title: 'Window Sensor', type: 'Sensor', uri: '/things/window-sensor/td', wotUri: `http://localhost:${THING_PORTS.windowSensor}/window-sensor` },
+      { id: 'motion-sensor', title: 'Motion Sensor', type: 'Sensor', uri: '/things/motion-sensor/td', wotUri: `http://localhost:${THING_PORTS.motionSensor}/motion-sensor` },
+      { id: 'alarm-system', title: 'Alarm System', type: 'Actuator', uri: '/things/alarm-system/td', wotUri: `http://localhost:${THING_PORTS.alarmSystem}/alarm-system` },
+      { id: 'notification-service', title: 'Notification Service', type: 'Service', uri: '/things/notification-service/td', wotUri: `http://localhost:${THING_PORTS.notificationService}/notification-service` }
     ]
   });
 });
@@ -354,7 +388,7 @@ const server = app.listen(HTTP_PORT, () => {
 
 const wss = new WebSocketServer({ server });
 
-broadcast = function(data) {
+broadcast = function (data) {
   const msg = JSON.stringify(data);
   wss.clients.forEach(client => {
     if (client.readyState === 1) client.send(msg);
@@ -370,24 +404,24 @@ wss.on('connection', (ws) => {
 
 process.on('SIGINT', () => {
   console.log('\n[System] Arresto in corso...');
-  
+
   server.close(() => {
     console.log('[HTTP Server] Arrestato');
   });
-  
+
   if (mqttClient) {
     mqttClient.end(() => {
       console.log('[MQTT Client] Disconnesso');
     });
   }
-  
+
   mqttServer.close(() => {
     console.log('[MQTT Broker] Arrestato');
     broker.close(() => {
       process.exit(0);
     });
   });
-  
+
   setTimeout(() => {
     console.error('[System] Arresto forzato');
     process.exit(1);

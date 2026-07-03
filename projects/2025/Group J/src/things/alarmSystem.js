@@ -1,132 +1,128 @@
 /**
- * Alarm System Thing
- * Sistema responsabile dell'attivazione e del reset dell'allarme
+ * Alarm System Thing (Producer WoT)
+ * Sistema responsabile dell'attivazione e del reset dell'allarme.
+ *
+ * Differenza rispetto alla versione precedente:
+ * - la Thing Description non è più un JSON scritto a mano: viene generata
+ *   da node-wot a partire dal modello che passiamo a WoT.produce().
+ * - le properties/actions/events sono collegate a handler reali
+ *   (setPropertyReadHandler / setActionHandler / emitEvent), quindi la TD
+ *   descrive esattamente ciò che la Thing sa fare, non una copia statica.
+ * - la Thing è esposta tramite un vero Servient (HTTP binding di node-wot),
+ *   pronta per essere "consumata" da un Consumer (l'Orchestrator) tramite
+ *   WoT.consume(td), invece di essere chiamata come oggetto JS.
  */
 
+const { Servient } = require('@node-wot/core');
+const { HttpServer } = require('@node-wot/binding-http');
 const { v4: uuidv4 } = require('uuid');
 
 class AlarmSystem {
-  constructor(mqttClient, broadcast) {
+  /**
+   * @param {object} mqttClient - client MQTT legacy, usato SOLO finché
+   *   l'Orchestrator non consuma l'evento "alarmTriggered" direttamente
+   *   dalla TD (subscribeEvent). Da rimuovere nel refactor dell'Orchestrator.
+   * @param {function} broadcast - callback verso i client WebSocket della dashboard
+   * @param {object} options - { httpPort }
+   */
+  constructor(mqttClient, broadcast, options = {}) {
     this.id = uuidv4();
     this.title = 'Alarm System';
-    this.type = ['Thing'];
-    this.description = 'Sistema responsabile dell\'attivazione e del reset dell\'allarme';
-    this.alarmStatus = 'RESET'; // RESET, TRIGGERED
+    this.alarmStatus = 'RESET'; // RESET | TRIGGERED
+
     this.mqttClient = mqttClient;
     this.broadcast = broadcast || (() => {});
-    
-    this.thingDescriptionURI = `/things/alarm-system/td`;
-    this.baseURI = '/things/alarm-system';
-    
-    this.generateThingDescription();
+    this.httpPort = options.httpPort || 3004;
+
+    this.exposedThing = null;
+    this.thingDescription = null;
+
+    // L'esposizione WoT è asincrona (avvio Servient + binding HTTP).
+    // Le chiamate a metodi pubblici prima che sia pronta vengono messe in coda.
+    this.ready = this._exposeAsThing();
   }
 
-  generateThingDescription() {
-    this.thingDescription = {
-      '@context': [
-        'https://www.w3.org/2022/wot/td/v1.1',
-        { '@language': 'it' }
-      ],
-      '@type': 'Thing',
-      'id': `urn:wot:alarm-system:${this.id}`,
-      'title': this.title,
-      'description': this.description,
-      'securityDefinitions': {
-        'nosec_sc': {
-          'scheme': 'nosec'
+  async _exposeAsThing() {
+    this.servient = new Servient();
+    this.servient.addServer(new HttpServer({ port: this.httpPort }));
+
+    const WoT = await this.servient.start();
+
+    this.exposedThing = await WoT.produce({
+      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }],
+      id: `urn:wot:alarm-system:${this.id}`,
+      title: this.title,
+      description: "Sistema responsabile dell'attivazione e del reset dell'allarme",
+      properties: {
+        alarmStatus: {
+          title: 'Stato Allarme',
+          description: "Stato dell'allarme: RESET o TRIGGERED",
+          type: 'string',
+          enum: ['RESET', 'TRIGGERED'],
+          readOnly: true
         }
       },
-      'security': 'nosec_sc',
-      'properties': {
-        'alarmStatus': {
-          'title': 'Stato Allarme',
-          'description': 'Stato dell\'allarme: RESET o TRIGGERED',
-          'type': 'string',
-          'enum': ['RESET', 'TRIGGERED'],
-          'readOnly': true,
-          'forms': [
-            {
-              'href': `${this.baseURI}/properties/alarmStatus`,
-              'contentType': 'application/json',
-              'op': 'readproperty'
-            }
-          ]
-        }
-      },
-      'actions': {
-        'triggerAlarm': {
-          'title': 'Attiva Allarme',
-          'description': 'Attiva il sistema di allarme',
-          'forms': [
-            {
-              'href': `${this.baseURI}/actions/triggerAlarm`,
-              'contentType': 'application/json',
-              'op': 'invokeaction'
-            }
-          ]
+      actions: {
+        triggerAlarm: {
+          title: 'Attiva Allarme',
+          description: 'Attiva il sistema di allarme'
         },
-        'resetAlarm': {
-          'title': 'Reset Allarme',
-          'description': 'Resetta il sistema di allarme',
-          'forms': [
-            {
-              'href': `${this.baseURI}/actions/resetAlarm`,
-              'contentType': 'application/json',
-              'op': 'invokeaction'
-            }
-          ]
+        resetAlarm: {
+          title: 'Reset Allarme',
+          description: 'Resetta il sistema di allarme'
         }
       },
-      'events': {
-        'alarmTriggered': {
-          'title': 'Allarme Attivato',
-          'description': 'Evento generato quando l\'allarme viene attivato',
-          'data': {
-            'type': 'object',
-            'properties': {
-              'timestamp': { 'type': 'string' },
-              'alarmStatus': { 'type': 'string' }
+      events: {
+        alarmTriggered: {
+          title: 'Allarme Attivato',
+          description: "Evento generato quando l'allarme viene attivato",
+          data: {
+            type: 'object',
+            properties: {
+              timestamp: { type: 'string' },
+              alarmStatus: { type: 'string' }
             }
-          },
-          'forms': [
-            {
-              'href': `mqtt://localhost:1883/events/alarm-system/alarmTriggered`,
-              'contentType': 'application/json',
-              'op': 'subscribeevent'
-            }
-          ]
+          }
         }
-      },
-      'base': `http://localhost:3000${this.baseURI}/`
-    };
+      }
+    });
+
+    // Handler reali: la TD ora rispecchia comportamento vero, non testo statico
+    this.exposedThing.setPropertyReadHandler('alarmStatus', async () => this.alarmStatus);
+    this.exposedThing.setActionHandler('triggerAlarm', async () => {
+      this._doTrigger();
+      return undefined;
+    });
+    this.exposedThing.setActionHandler('resetAlarm', async () => {
+      this._doReset();
+      return undefined;
+    });
+
+    await this.exposedThing.expose();
+    this.thingDescription = this.exposedThing.getThingDescription();
+
+    console.log(`[AlarmSystem] Esposta come vera WoT Thing su http://localhost:${this.httpPort}/alarm-system`);
   }
 
-  getThingDescription() {
-    return this.thingDescription;
-  }
+  // ---- Logica interna (invariata rispetto a prima) ----
 
-  getProperty(propName) {
-    if (propName === 'alarmStatus') {
-      return { value: this.alarmStatus };
-    }
-    return null;
-  }
-
-  getAllProperties() {
-    return {
-      alarmStatus: this.alarmStatus
-    };
-  }
-
-  triggerAlarm() {
+  _doTrigger() {
     this.alarmStatus = 'TRIGGERED';
     const eventPayload = {
       timestamp: new Date().toISOString(),
       alarmStatus: this.alarmStatus
     };
-    
+
     console.log('[AlarmSystem] ALLARME ATTIVATO!');
-    
+
+    // Evento WoT reale: chi consuma la TD può iscriversi con subscribeEvent()
+    if (this.exposedThing) {
+      this.exposedThing.emitEvent('alarmTriggered', eventPayload);
+    }
+
+    // TODO(rimuovere dopo il refactor dell'Orchestrator): pubblicazione MQTT
+    // legacy, mantenuta solo per non rompere l'Orchestrator attuale che si
+    // iscrive ancora a topic hardcoded invece di consumare la TD.
     if (this.mqttClient && this.mqttClient.connected) {
       this.mqttClient.publish(
         'events/alarm-system/alarmTriggered',
@@ -136,10 +132,10 @@ class AlarmSystem {
     }
   }
 
-  resetAlarm() {
+  _doReset() {
     this.alarmStatus = 'RESET';
     console.log('[AlarmSystem] Allarme resettato');
-    
+
     if (this.mqttClient && this.mqttClient.connected) {
       this.mqttClient.publish(
         'events/alarm-system/alarmReset',
@@ -150,6 +146,37 @@ class AlarmSystem {
         { qos: 1 }
       );
     }
+  }
+
+  // ---- API pubblica mantenuta invariata (compatibilità con index.js e Orchestrator attuali) ----
+  // Nel prossimo step (refactor dell'Orchestrator) questi metodi non serviranno
+  // più: chi vorrà interagire con l'Alarm System dovrà consumarne la TD e
+  // chiamare invokeAction()/readProperty() sul ConsumedThing.
+
+  triggerAlarm() {
+    this._doTrigger();
+  }
+
+  resetAlarm() {
+    this._doReset();
+  }
+
+  getProperty(propName) {
+    if (propName === 'alarmStatus') {
+      return { value: this.alarmStatus };
+    }
+    return null;
+  }
+
+  getAllProperties() {
+    return { alarmStatus: this.alarmStatus };
+  }
+
+  // Ora restituisce la TD generata realmente da node-wot, non un JSON scritto a mano.
+  // È async perché l'esposizione della Thing è asincrona.
+  async getThingDescription() {
+    await this.ready;
+    return this.thingDescription;
   }
 }
 

@@ -1,104 +1,117 @@
 /**
- * Motion Sensor Thing
- * Sensore che rileva movimento all'interno dell'ambiente
+ * Motion Sensor Thing (Producer WoT)
+ * Sensore che rileva movimento all'interno dell'ambiente.
+ * Stessa logica di doorSensor.js/windowSensor.js.
  */
 
+const { Servient } = require('@node-wot/core');
+const { HttpServer } = require('@node-wot/binding-http');
 const { v4: uuidv4 } = require('uuid');
 
 class MotionSensor {
-  constructor(mqttClient) {
+  constructor(mqttClient, options = {}) {
     this.id = uuidv4();
     this.title = 'Motion Sensor';
-    this.type = ['Thing'];
-    this.description = 'Sensore che rileva movimento all\'interno dell\'ambiente';
+    this.description = "Sensore che rileva movimento all'interno dell'ambiente";
     this.motionDetected = false;
+
     this.mqttClient = mqttClient;
-    
-    this.thingDescriptionURI = `/things/motion-sensor/td`;
-    this.baseURI = '/things/motion-sensor';
-    
-    this.generateThingDescription();
+    this.httpPort = options.httpPort || 3003;
+
+    this.exposedThing = null;
+    this.thingDescription = null;
+
+    this.ready = this._exposeAsThing();
   }
 
-  generateThingDescription() {
-    this.thingDescription = {
-      '@context': [
-        'https://www.w3.org/2022/wot/td/v1.1',
-        { '@language': 'it' }
-      ],
-      '@type': 'Thing',
-      'id': `urn:wot:motion-sensor:${this.id}`,
-      'title': this.title,
-      'description': this.description,
-      'securityDefinitions': {
-        'nosec_sc': {
-          'scheme': 'nosec'
-        }
-      },
-      'security': 'nosec_sc',
-      'properties': {
-        'motionDetected': {
-          'title': 'Movimento Rilevato',
-          'description': 'Indica se è stato rilevato movimento',
-          'type': 'boolean',
-          'readOnly': true,
-          'forms': [
-            {
-              'href': `${this.baseURI}/properties/motionDetected`,
-              'contentType': 'application/json',
-              'op': 'readproperty'
-            }
-          ]
+  async _exposeAsThing() {
+    this.servient = new Servient();
+    this.servient.addServer(new HttpServer({ port: this.httpPort }));
+
+    const WoT = await this.servient.start();
+
+    this.exposedThing = await WoT.produce({
+      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }],
+      id: `urn:wot:motion-sensor:${this.id}`,
+      title: this.title,
+      description: this.description,
+      properties: {
+        motionDetected: {
+          title: 'Movimento Rilevato',
+          description: 'Indica se è stato rilevato movimento',
+          type: 'boolean',
+          readOnly: true
         },
-        'lastUpdate': {
-          'title': 'Ultimo Aggiornamento',
-          'description': 'Timestamp dell\'ultimo evento',
-          'type': 'string',
-          'readOnly': true,
-          'forms': [
-            {
-              'href': `${this.baseURI}/properties/lastUpdate`,
-              'contentType': 'application/json',
-              'op': 'readproperty'
-            }
-          ]
+        lastUpdate: {
+          title: 'Ultimo Aggiornamento',
+          description: "Timestamp dell'ultimo evento",
+          type: 'string',
+          readOnly: true
         }
       },
-      'events': {
-        'motionDetected': {
-          'title': 'Movimento Rilevato',
-          'description': 'Evento generato quando viene rilevato movimento',
-          'data': {
-            'type': 'object',
-            'properties': {
-              'timestamp': { 'type': 'string' },
-              'motionDetected': { 'type': 'boolean' }
-            }
-          },
-          'forms': [
-            {
-              'href': `mqtt://localhost:1883/events/motion-sensor/motionDetected`,
-              'contentType': 'application/json',
-              'op': 'subscribeevent'
-            }
-          ]
+      actions: {
+        setMotionDetected: {
+          title: 'Imposta Movimento',
+          description: 'Simula rilevamento di movimento (uso manuale/test)',
+          input: { type: 'boolean' }
         }
       },
-      'base': `http://localhost:3000${this.baseURI}/`
-    };
+      events: {
+        motionDetected: {
+          title: 'Movimento Rilevato',
+          description: 'Evento generato quando viene rilevato movimento',
+          data: {
+            type: 'object',
+            properties: {
+              timestamp: { type: 'string' },
+              motionDetected: { type: 'boolean' }
+            }
+          }
+        }
+      }
+    });
+
+    this.exposedThing.setPropertyReadHandler('motionDetected', async () => this.motionDetected);
+    this.exposedThing.setPropertyReadHandler('lastUpdate', async () => new Date().toISOString());
+    this.exposedThing.setActionHandler('setMotionDetected', async (params) => {
+      const state = await params.value();
+      this._doSetMotionDetected(state);
+      return undefined;
+    });
+
+    await this.exposedThing.expose();
+    this.thingDescription = this.exposedThing.getThingDescription();
+
+    console.log(`[MotionSensor] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/motion-sensor`);
   }
 
-  getThingDescription() {
-    return this.thingDescription;
+  _doSetMotionDetected(state) {
+    this.motionDetected = state;
+    const eventPayload = {
+      timestamp: new Date().toISOString(),
+      motionDetected: state
+    };
+
+    if (this.exposedThing) {
+      this.exposedThing.emitEvent('motionDetected', eventPayload);
+    }
+
+    if (this.mqttClient && this.mqttClient.connected) {
+      this.mqttClient.publish(
+        'events/motion-sensor/motionDetected',
+        JSON.stringify(eventPayload),
+        { qos: 1 }
+      );
+    }
+  }
+
+  setMotionDetected(state) {
+    this._doSetMotionDetected(state);
   }
 
   getProperty(propName) {
-    if (propName === 'motionDetected') {
-      return { value: this.motionDetected };
-    }
-    if (propName === 'lastUpdate') {
-      return { value: new Date().toISOString() };
-    }
+    if (propName === 'motionDetected') return { value: this.motionDetected };
+    if (propName === 'lastUpdate') return { value: new Date().toISOString() };
     return null;
   }
 
@@ -109,22 +122,10 @@ class MotionSensor {
     };
   }
 
-  setMotionDetected(state) {
-    this.motionDetected = state;
-    const eventPayload = {
-      timestamp: new Date().toISOString(),
-      motionDetected: state
-    };
-    
-    if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(
-        'events/motion-sensor/motionDetected',
-        JSON.stringify(eventPayload),
-        { qos: 1 }
-      );
-    }
+  async getThingDescription() {
+    await this.ready;
+    return this.thingDescription;
   }
-
 }
 
 module.exports = MotionSensor;
