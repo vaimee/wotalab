@@ -2,15 +2,14 @@
  * Alarm System Thing (Producer WoT)
  * Sistema responsabile dell'attivazione e del reset dell'allarme.
  *
- * Differenza rispetto alla versione precedente:
- * - la Thing Description non è più un JSON scritto a mano: viene generata
- *   da node-wot a partire dal modello che passiamo a WoT.produce().
+ * - la Thing Description non è scritta a mano: viene generata da node-wot
+ *   a partire dal modello che passiamo a WoT.produce().
  * - le properties/actions/events sono collegate a handler reali
  *   (setPropertyReadHandler / setActionHandler / emitEvent), quindi la TD
  *   descrive esattamente ciò che la Thing sa fare, non una copia statica.
  * - la Thing è esposta tramite un vero Servient (HTTP binding di node-wot),
- *   pronta per essere "consumata" da un Consumer (l'Orchestrator) tramite
- *   WoT.consume(td), invece di essere chiamata come oggetto JS.
+ *   consumata dall'Orchestrator tramite WoT.consume(td) e
+ *   invokeAction()/readProperty()/subscribeEvent(), nessuna dipendenza MQTT.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -19,18 +18,14 @@ const { v4: uuidv4 } = require('uuid');
 
 class AlarmSystem {
   /**
-   * @param {object} mqttClient - client MQTT legacy, usato SOLO finché
-   *   l'Orchestrator non consuma l'evento "alarmTriggered" direttamente
-   *   dalla TD (subscribeEvent). Da rimuovere nel refactor dell'Orchestrator.
    * @param {function} broadcast - callback verso i client WebSocket della dashboard
    * @param {object} options - { httpPort }
    */
-  constructor(mqttClient, broadcast, options = {}) {
+  constructor(broadcast, options = {}) {
     this.id = uuidv4();
     this.title = 'Alarm System';
     this.alarmStatus = 'RESET'; // RESET | TRIGGERED
 
-    this.mqttClient = mqttClient;
     this.broadcast = broadcast || (() => {});
     this.httpPort = options.httpPort || 3004;
 
@@ -119,39 +114,17 @@ class AlarmSystem {
     if (this.exposedThing) {
       this.exposedThing.emitEvent('alarmTriggered', eventPayload);
     }
-
-    // TODO(rimuovere dopo il refactor dell'Orchestrator): pubblicazione MQTT
-    // legacy, mantenuta solo per non rompere l'Orchestrator attuale che si
-    // iscrive ancora a topic hardcoded invece di consumare la TD.
-    if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(
-        'events/alarm-system/alarmTriggered',
-        JSON.stringify(eventPayload),
-        { qos: 1 }
-      );
-    }
   }
 
   _doReset() {
     this.alarmStatus = 'RESET';
     console.log('[AlarmSystem] Allarme resettato');
-
-    if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(
-        'events/alarm-system/alarmReset',
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          alarmStatus: this.alarmStatus
-        }),
-        { qos: 1 }
-      );
-    }
   }
 
-  // ---- API pubblica mantenuta invariata (compatibilità con index.js e Orchestrator attuali) ----
-  // Nel prossimo step (refactor dell'Orchestrator) questi metodi non serviranno
-  // più: chi vorrà interagire con l'Alarm System dovrà consumarne la TD e
-  // chiamare invokeAction()/readProperty() sul ConsumedThing.
+  // ---- API pubblica mantenuta per compatibilità con le route manuali di
+  // index.js (es. /things/alarm-system/actions/triggerAlarm). L'Orchestrator
+  // (Consumer WoT) NON usa più questi metodi: interagisce con questa Thing
+  // esclusivamente tramite invokeAction()/readProperty() sulla sua TD reale. ----
 
   triggerAlarm() {
     this._doTrigger();

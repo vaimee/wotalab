@@ -8,13 +8,12 @@ const { HttpServer } = require('@node-wot/binding-http');
 const { v4: uuidv4 } = require('uuid');
 
 class NotificationService {
-  constructor(mqttClient, broadcast, options = {}) {
+  constructor(broadcast, options = {}) {
     this.id = uuidv4();
     this.title = 'Notification Service';
     this.description = "Servizio che simula l'invio di notifiche all'utente";
     this.notifications = [];
 
-    this.mqttClient = mqttClient;
     this.broadcast = broadcast || (() => {});
     this.httpPort = options.httpPort || 3005;
 
@@ -96,19 +95,13 @@ class NotificationService {
       this.exposedThing.emitEvent('notificationSent', notification);
     }
 
-    // TODO(rimuovere dopo il refactor dell'Orchestrator): pubblicazione MQTT legacy.
-    if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(
-        'events/notification-service/notificationSent',
-        JSON.stringify(notification),
-        { qos: 1 }
-      );
-    }
-
     return notification;
   }
 
-  // ---- API pubblica mantenuta per compatibilità con index.js/Orchestrator attuali ----
+  // ---- API pubblica mantenuta per compatibilità con le route manuali di
+  // index.js (es. /things/notification-service/actions/sendNotification).
+  // L'Orchestrator (Consumer WoT) NON usa più questi metodi: interagisce con
+  // questa Thing esclusivamente tramite invokeAction() sulla sua TD reale. ----
 
   sendNotification(message, severity = 'info') {
     return this._doSendNotification(message, severity);

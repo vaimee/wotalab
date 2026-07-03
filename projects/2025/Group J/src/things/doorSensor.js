@@ -2,11 +2,11 @@
  * Door Sensor Thing (Producer WoT)
  * Sensore che rileva apertura e chiusura della porta.
  *
- * Stesse note di alarmSystem.js: la TD è generata da node-wot a partire da
- * un vero ExposedThing, non scritta a mano. In più, l'azione "setOpen"
- * (che nel progetto originale esisteva solo come route HTTP manuale in
- * index.js, senza comparire nella TD) è ora dichiarata correttamente come
- * action della Thing.
+ * La TD è generata da node-wot a partire da un vero ExposedThing, non
+ * scritta a mano. L'azione "setOpen" è dichiarata correttamente come action
+ * della Thing. Non ha più alcuna dipendenza da MQTT: l'Orchestrator (Consumer
+ * WoT) consuma questa Thing solo tramite la sua TD reale, con
+ * subscribeEvent()/readProperty()/invokeAction().
  */
 
 const { Servient } = require('@node-wot/core');
@@ -14,13 +14,12 @@ const { HttpServer } = require('@node-wot/binding-http');
 const { v4: uuidv4 } = require('uuid');
 
 class DoorSensor {
-  constructor(mqttClient, options = {}) {
+  constructor(options = {}) {
     this.id = uuidv4();
     this.title = 'Door Sensor';
     this.description = 'Sensore che rileva apertura e chiusura della porta';
     this.isOpen = false;
 
-    this.mqttClient = mqttClient;
     this.httpPort = options.httpPort || 3001;
 
     this.exposedThing = null;
@@ -100,19 +99,12 @@ class DoorSensor {
     if (this.exposedThing) {
       this.exposedThing.emitEvent('doorOpened', eventPayload);
     }
-
-    // TODO(rimuovere dopo il refactor dell'Orchestrator): pubblicazione MQTT
-    // legacy, mantenuta finché l'Orchestrator non fa subscribeEvent() sulla TD.
-    if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(
-        'events/door-sensor/doorOpened',
-        JSON.stringify(eventPayload),
-        { qos: 1 }
-      );
-    }
   }
 
-  // ---- API pubblica mantenuta per compatibilità con index.js/Orchestrator attuali ----
+  // ---- API pubblica mantenuta per compatibilità con le route manuali di
+  // index.js (es. /things/door-sensor/actions/setOpen). L'Orchestrator
+  // (Consumer WoT) NON usa più questi metodi: legge lo stato tramite
+  // subscribeEvent()/readProperty() sulla TD reale. ----
 
   setOpen(state) {
     this._doSetOpen(state);

@@ -2,23 +2,27 @@
  * Application Entry Point
  * Smart Home Security System - Web of Things
  *
- * Modifiche rispetto alla versione precedente:
- * - ogni Thing ora espone se stessa come vero WoT Producer (node-wot) su una
- *   porta HTTP dedicata, quindi riceve un'opzione { httpPort } in più.
- * - getThingDescription() delle Thing è ora asincrono (l'esposizione WoT lo
- *   è), quindi le route che restituiscono la TD usano await.
- * - tutto il resto (route Express verso la dashboard, logica applicativa,
- *   MQTT client/broker per gli eventi legacy) resta invariato: l'Orchestrator
- *   in questo step non è ancora stato toccato, verrà convertito a Consumer
- *   WoT nel prossimo passaggio.
+ * Architettura:
+ * - ogni Thing (doorSensor, windowSensor, motionSensor, alarmSystem,
+ *   notificationService) espone se stessa come vero WoT Producer (node-wot)
+ *   su una porta HTTP dedicata, con TD generata da node-wot.
+ * - getThingDescription() delle Thing è asincrono (l'esposizione WoT lo è),
+ *   quindi le route che restituiscono la TD usano await.
+ * - l'Orchestrator è un vero Consumer WoT: non riceve le istanze JS di
+ *   alarmSystem/notificationService, ma solo gli URL delle loro TD reali.
+ *   Le fa proprie con WoT.requestThingDescription() + WoT.consume() e parla
+ *   con esse solo tramite invokeAction()/readProperty()/subscribeEvent().
+ *   Le sue azioni (activateSecurityMode, ecc.) sono quindi asincrone e le
+ *   relative route Express usano await.
+ * - non c'è più alcun broker/client MQTT: era usato solo come canale di
+ *   comunicazione legacy tra le Thing e l'Orchestrator, ora sostituito
+ *   interamente da HTTP + WoT (TD reali, invokeAction/readProperty/
+ *   subscribeEvent).
  */
 
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const mqtt = require('mqtt');
-const { Aedes } = require('aedes');
-const net = require('net');
 const { WebSocketServer } = require('ws');
 
 const DoorSensor = require('./things/doorSensor');
@@ -30,9 +34,8 @@ const Orchestrator = require('./orchestrator/orchestrator');
 
 const app = express();
 const HTTP_PORT = 3000;
-const MQTT_PORT = 1883;
 
-// Porte HTTP dedicate a ciascuna Thing (ora ogni Thing è un Producer WoT
+// Porte HTTP dedicate a ciascuna Thing (ogni Thing è un Producer WoT
 // indipendente, con il proprio endpoint generato da node-wot).
 const THING_PORTS = {
   doorSensor: 3001,
@@ -51,79 +54,59 @@ console.log('\n' + '='.repeat(60));
 console.log('Smart Home Security System - Web of Things');
 console.log('='.repeat(60) + '\n');
 
-// MQTT Broker Setup (Aedes) - usato per gli eventi legacy in attesa
-// che l'Orchestrator diventi un vero Consumer WoT (prossimo step).
-let broker;
-let mqttServer;
-let mqttClient;
 let doorSensor, windowSensor, motionSensor, alarmSystem, notificationService, orchestrator;
 
+// broadcast viene sostituito con la funzione reale dopo l'avvio del
+// WebSocketServer (più sotto). Le Thing/l'Orchestrator ricevono un piccolo
+// proxy che inoltra sempre alla versione corrente di `broadcast`, così
+// l'ordine di inizializzazione non è rilevante.
 let broadcast = () => {};
+const broadcastProxy = (data) => broadcast(data);
 
-async function setupMqttClient(client) {
-  client.on('connect', async () => {
-    console.log('✓ [MQTT Client] Connesso al broker');
+async function initSystem() {
+  doorSensor = new DoorSensor({ httpPort: THING_PORTS.doorSensor });
+  windowSensor = new WindowSensor({ httpPort: THING_PORTS.windowSensor });
+  motionSensor = new MotionSensor({ httpPort: THING_PORTS.motionSensor });
+  alarmSystem = new AlarmSystem(broadcastProxy, { httpPort: THING_PORTS.alarmSystem });
+  notificationService = new NotificationService(broadcastProxy, { httpPort: THING_PORTS.notificationService });
 
-    doorSensor = new DoorSensor(client, { httpPort: THING_PORTS.doorSensor });
-    windowSensor = new WindowSensor(client, { httpPort: THING_PORTS.windowSensor });
-    motionSensor = new MotionSensor(client, { httpPort: THING_PORTS.motionSensor });
-    alarmSystem = new AlarmSystem(client, broadcast, { httpPort: THING_PORTS.alarmSystem });
-    notificationService = new NotificationService(client, broadcast, { httpPort: THING_PORTS.notificationService });
+  // Attende che ogni Thing abbia finito di esporsi come Producer WoT
+  // (Servient + HTTP binding avviati, TD generata) prima di segnalarla pronta.
+  await Promise.all([
+    doorSensor.ready,
+    windowSensor.ready,
+    motionSensor.ready,
+    alarmSystem.ready,
+    notificationService.ready
+  ]);
 
-    // Attende che ogni Thing abbia finito di esporsi come Producer WoT
-    // (Servient + HTTP binding avviati, TD generata) prima di segnalarla pronta.
-    await Promise.all([
-      doorSensor.ready,
-      windowSensor.ready,
-      motionSensor.ready,
-      alarmSystem.ready,
-      notificationService.ready
-    ]);
+  console.log('✓ [System] Tutte le Things esposte come veri WoT Producer');
 
-    orchestrator = new Orchestrator(client, alarmSystem, notificationService, broadcast);
+  // L'Orchestrator è un vero Consumer WoT: riceve solo gli URL delle TD
+  // reali e le consuma con WoT.requestThingDescription() + WoT.consume().
+  const THING_URLS = {
+    doorSensor: `http://localhost:${THING_PORTS.doorSensor}/door-sensor`,
+    windowSensor: `http://localhost:${THING_PORTS.windowSensor}/window-sensor`,
+    motionSensor: `http://localhost:${THING_PORTS.motionSensor}/motion-sensor`,
+    alarmSystem: `http://localhost:${THING_PORTS.alarmSystem}/alarm-system`,
+    notificationService: `http://localhost:${THING_PORTS.notificationService}/notification-service`
+  };
 
-    console.log('✓ [System] Tutte le Things esposte come veri WoT Producer');
-    console.log('✓ [System] Orchestrator attivo\n');
-  });
+  orchestrator = new Orchestrator(THING_URLS, broadcastProxy);
+  await orchestrator.ready;
 
-  client.on('error', (err) => {
-    console.error('[MQTT Client] Errore di connessione:', err);
-  });
-
-  client.on('disconnect', () => {
-    console.log('[MQTT Client] Disconnesso dal broker');
-  });
+  console.log('✓ [System] Orchestrator attivo come Consumer WoT\n');
 }
 
-async function startBroker() {
-  broker = await Aedes.createBroker();
-  mqttServer = net.createServer(broker.handle);
-
-  mqttServer.listen(MQTT_PORT, () => {
-    console.log(`✓ [MQTT Broker] In ascolto su porta ${MQTT_PORT}`);
-
-    mqttClient = mqtt.connect(`mqtt://localhost:${MQTT_PORT}`);
-    setupMqttClient(mqttClient);
-  });
-
-  broker.on('clientError', (client, err) => {
-    console.error('[MQTT Broker] Client error:', client ? client.id : 'unknown', err);
-  });
-
-  broker.on('error', (err) => {
-    console.error('[MQTT Broker] Errore:', err);
-  });
-}
-
-startBroker().catch((err) => {
-  console.error('[MQTT Broker] Avvio fallito:', err);
+initSystem().catch((err) => {
+  console.error('[System] Avvio fallito:', err);
   process.exit(1);
 });
 
 // ==================== Utility Functions ====================
 
 function ensureInitialized(res) {
-  if (!doorSensor) {
+  if (!doorSensor || !orchestrator) {
     res.status(503).json({ error: 'Service not ready' });
     return false;
   }
@@ -138,8 +121,8 @@ app.get('/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     services: {
-      mqtt: mqttClient && mqttClient.connected ? 'connected' : 'disconnected',
-      things_ready: !!doorSensor
+      things_ready: !!doorSensor,
+      orchestrator_ready: !!orchestrator
     }
   });
 });
@@ -300,22 +283,22 @@ app.post('/things/notification-service/actions/sendNotification', (req, res) => 
 
 // ==================== Orchestrator Properties ====================
 
-app.get('/orchestrator/properties/securityMode', (req, res) => {
+app.get('/orchestrator/properties/securityMode', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  res.json(orchestrator.getProperty('securityMode'));
+  res.json(await orchestrator.getProperty('securityMode'));
 });
 
 // ==================== Orchestrator Actions ====================
 
-app.post('/orchestrator/actions/activateSecurityMode', (req, res) => {
+app.post('/orchestrator/actions/activateSecurityMode', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  orchestrator.activateSecurityMode();
+  await orchestrator.activateSecurityMode();
   res.json({ result: 'Security mode activated', securityMode: true });
 });
 
-app.post('/orchestrator/actions/deactivateSecurityMode', (req, res) => {
+app.post('/orchestrator/actions/deactivateSecurityMode', async (req, res) => {
   if (!ensureInitialized(res)) return;
-  orchestrator.deactivateSecurityMode();
+  await orchestrator.deactivateSecurityMode();
   res.json({ result: 'Security mode deactivated', securityMode: false });
 });
 
@@ -407,19 +390,7 @@ process.on('SIGINT', () => {
 
   server.close(() => {
     console.log('[HTTP Server] Arrestato');
-  });
-
-  if (mqttClient) {
-    mqttClient.end(() => {
-      console.log('[MQTT Client] Disconnesso');
-    });
-  }
-
-  mqttServer.close(() => {
-    console.log('[MQTT Broker] Arrestato');
-    broker.close(() => {
-      process.exit(0);
-    });
+    process.exit(0);
   });
 
   setTimeout(() => {

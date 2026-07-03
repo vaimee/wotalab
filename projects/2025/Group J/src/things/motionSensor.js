@@ -1,7 +1,7 @@
 /**
  * Motion Sensor Thing (Producer WoT)
  * Sensore che rileva movimento all'interno dell'ambiente.
- * Stessa logica di doorSensor.js/windowSensor.js.
+ * Stessa logica di doorSensor.js/windowSensor.js, nessuna dipendenza da MQTT.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -9,13 +9,12 @@ const { HttpServer } = require('@node-wot/binding-http');
 const { v4: uuidv4 } = require('uuid');
 
 class MotionSensor {
-  constructor(mqttClient, options = {}) {
+  constructor(options = {}) {
     this.id = uuidv4();
     this.title = 'Motion Sensor';
     this.description = "Sensore che rileva movimento all'interno dell'ambiente";
     this.motionDetected = false;
 
-    this.mqttClient = mqttClient;
     this.httpPort = options.httpPort || 3003;
 
     this.exposedThing = null;
@@ -94,14 +93,6 @@ class MotionSensor {
 
     if (this.exposedThing) {
       this.exposedThing.emitEvent('motionDetected', eventPayload);
-    }
-
-    if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(
-        'events/motion-sensor/motionDetected',
-        JSON.stringify(eventPayload),
-        { qos: 1 }
-      );
     }
   }
 

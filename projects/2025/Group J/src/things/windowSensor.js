@@ -1,7 +1,7 @@
 /**
  * Window Sensor Thing (Producer WoT)
  * Sensore che rileva apertura e chiusura delle finestre.
- * Stessa logica di doorSensor.js.
+ * Stessa logica di doorSensor.js, nessuna dipendenza da MQTT.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -9,13 +9,12 @@ const { HttpServer } = require('@node-wot/binding-http');
 const { v4: uuidv4 } = require('uuid');
 
 class WindowSensor {
-  constructor(mqttClient, options = {}) {
+  constructor(options = {}) {
     this.id = uuidv4();
     this.title = 'Window Sensor';
     this.description = 'Sensore che rileva apertura e chiusura delle finestre';
     this.isOpen = false;
 
-    this.mqttClient = mqttClient;
     this.httpPort = options.httpPort || 3002;
 
     this.exposedThing = null;
@@ -94,14 +93,6 @@ class WindowSensor {
 
     if (this.exposedThing) {
       this.exposedThing.emitEvent('windowOpened', eventPayload);
-    }
-
-    if (this.mqttClient && this.mqttClient.connected) {
-      this.mqttClient.publish(
-        'events/window-sensor/windowOpened',
-        JSON.stringify(eventPayload),
-        { qos: 1 }
-      );
     }
   }
 
