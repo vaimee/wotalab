@@ -2,11 +2,11 @@
  * Door Sensor Thing (Producer WoT)
  * Sensore che rileva apertura e chiusura della porta.
  *
- * La TD è generata da node-wot a partire da un vero ExposedThing, non
- * scritta a mano. L'azione "setOpen" è dichiarata correttamente come action
- * della Thing. Non ha più alcuna dipendenza da MQTT: l'Orchestrator (Consumer
- * WoT) consuma questa Thing solo tramite la sua TD reale, con
- * subscribeEvent()/readProperty()/invokeAction().
+ * La TD è generata da node-wot a partire da un vero ExposedThing.
+ * L'azione "setOpen" (uso manuale/test) è dichiarata nella TD.
+ * Gli eventi vengono emessi tramite emitEvent() ed esposti via HTTP
+ * (long-polling), come dichiarato nei forms della TD: non c'è più alcuna
+ * pubblicazione MQTT manuale, l'unico canale è quello del binding WoT.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -101,10 +101,7 @@ class DoorSensor {
     }
   }
 
-  // ---- API pubblica mantenuta per compatibilità con le route manuali di
-  // index.js (es. /things/door-sensor/actions/setOpen). L'Orchestrator
-  // (Consumer WoT) NON usa più questi metodi: legge lo stato tramite
-  // subscribeEvent()/readProperty() sulla TD reale. ----
+  // ---- API pubblica mantenuta per uso manuale/test da index.js ----
 
   setOpen(state) {
     this._doSetOpen(state);

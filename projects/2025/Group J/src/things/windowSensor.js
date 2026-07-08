@@ -1,7 +1,7 @@
 /**
  * Window Sensor Thing (Producer WoT)
  * Sensore che rileva apertura e chiusura delle finestre.
- * Stessa logica di doorSensor.js, nessuna dipendenza da MQTT.
+ * Stessa logica di doorSensor.js.
  */
 
 const { Servient } = require('@node-wot/core');

@@ -1,22 +1,20 @@
 /**
  * Orchestrator (Consumer WoT)
- * Gestisce la logica applicativa e coordina le interazioni tra le Things
+ * Gestisce la logica applicativa e coordina le interazioni tra le Things.
  *
- * Refactor rispetto alla versione precedente:
- * - non riceve più alarmSystem/notificationService come istanze JS: riceve
- *   solo gli URL delle Thing Description reali esposte dai relativi
- *   Producer (node-wot + HTTP binding), es. http://localhost:3004/alarm-system.
- * - all'avvio fa WoT.requestThingDescription(url) per ciascuna Thing e poi
- *   WoT.consume(td), ottenendo un ConsumedThing per ognuna.
- * - non chiama più metodi JS diretti (triggerAlarm(), sendNotification(), ...)
- *   né si iscrive a topic MQTT hardcoded: interagisce con le Thing SOLO
- *   tramite le primitive standard del Consumer WoT:
- *     - invokeAction(actionName, input)
- *     - readProperty(propName)
- *     - subscribeEvent(eventName, handler)
- * - la logica applicativa (quando scattare un allarme, cosa loggare sulla
- *   dashboard, ecc.) resta identica: cambia solo COME l'Orchestrator parla
- *   con le altre Thing.
+ * Differenza fondamentale rispetto alla versione precedente: l'Orchestrator
+ * non riceve più le Thing come istanze JavaScript da chiamare direttamente
+ * (this.alarmSystem.triggerAlarm()). Riceve solo gli URL delle loro Thing
+ * Description, e:
+ *  1. scarica ciascuna TD con WoT.requestThingDescription(url)
+ *  2. la consuma con WoT.consume(td), ottenendo un ConsumedThing
+ *  3. interagisce SOLO tramite invokeAction() / readProperty() / subscribeEvent(),
+ *     cioè tramite ciò che la TD dichiara — non tramite conoscenza diretta
+ *     dell'implementazione della Thing.
+ *
+ * Il trasporto usato (HTTP, con eventi via long-polling) è quello dichiarato
+ * nei forms della TD: l'Orchestrator non lo sceglie né lo conosce a priori,
+ * lo scopre leggendo la TD.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -24,14 +22,8 @@ const { HttpClientFactory } = require('@node-wot/binding-http');
 
 class Orchestrator {
   /**
-   * @param {object} thingUrls - URL delle TD reali esposte dai Producer WoT
-   *   {
-   *     doorSensor: 'http://localhost:3001/door-sensor',
-   *     windowSensor: 'http://localhost:3002/window-sensor',
-   *     motionSensor: 'http://localhost:3003/motion-sensor',
-   *     alarmSystem: 'http://localhost:3004/alarm-system',
-   *     notificationService: 'http://localhost:3005/notification-service'
-   *   }
+   * @param {object} thingUrls - URL delle TD delle Thing da consumare
+   *   { doorSensor, windowSensor, motionSensor, alarmSystem, notificationService }
    * @param {function} broadcast - callback verso i client WebSocket della dashboard
    */
   constructor(thingUrls, broadcast) {
@@ -40,73 +32,49 @@ class Orchestrator {
 
     this.securityMode = false;
     this.alertHistory = [];
+    this.consumedThings = {};
 
-    // ConsumedThing (proxy WoT) per ciascuna Thing remota, popolati da _init()
-    this.doorSensor = null;
-    this.windowSensor = null;
-    this.motionSensor = null;
-    this.alarmSystem = null;
-    this.notificationService = null;
-
-    // Come per le Thing (Producer), anche qui l'inizializzazione è asincrona:
-    // richiede TD via rete e consuma i risultati prima di essere operativo.
     this.ready = this._init();
   }
 
   async _init() {
-    // Il proprio Servient serve solo lato client: nessun server/porta HTTP,
-    // solo la client factory necessaria a fare richieste verso le altre Thing.
     this.servient = new Servient();
     this.servient.addClientFactory(new HttpClientFactory());
     this.WoT = await this.servient.start();
 
-    console.log('[Orchestrator] Consumer WoT avviato, richiedo le Thing Description...');
-
-    const [doorTD, windowTD, motionTD, alarmTD, notificationTD] = await Promise.all([
-      this.WoT.requestThingDescription(this.thingUrls.doorSensor),
-      this.WoT.requestThingDescription(this.thingUrls.windowSensor),
-      this.WoT.requestThingDescription(this.thingUrls.motionSensor),
-      this.WoT.requestThingDescription(this.thingUrls.alarmSystem),
-      this.WoT.requestThingDescription(this.thingUrls.notificationService)
-    ]);
-
-    this.doorSensor = await this.WoT.consume(doorTD);
-    this.windowSensor = await this.WoT.consume(windowTD);
-    this.motionSensor = await this.WoT.consume(motionTD);
-    this.alarmSystem = await this.WoT.consume(alarmTD);
-    this.notificationService = await this.WoT.consume(notificationTD);
-
-    console.log('[Orchestrator] Tutte le Thing Description sono state consumate');
+    this.consumedThings.doorSensor = await this._consume(this.thingUrls.doorSensor);
+    this.consumedThings.windowSensor = await this._consume(this.thingUrls.windowSensor);
+    this.consumedThings.motionSensor = await this._consume(this.thingUrls.motionSensor);
+    this.consumedThings.alarmSystem = await this._consume(this.thingUrls.alarmSystem);
+    this.consumedThings.notificationService = await this._consume(this.thingUrls.notificationService);
 
     await this._subscribeToEvents();
 
-    console.log('[Orchestrator] Sottoscritto agli eventi WoT dei sensori (subscribeEvent)');
+    console.log('[Orchestrator] Tutte le TD consumate, sottoscritto agli eventi dei sensori');
+  }
+
+  async _consume(url) {
+    const td = await this.WoT.requestThingDescription(url);
+    return this.WoT.consume(td);
   }
 
   async _subscribeToEvents() {
-    // Sostituisce le subscribe MQTT su topic hardcoded: ci iscriviamo agli
-    // eventi dichiarati nella TD di ciascun sensore.
-    await this.doorSensor.subscribeEvent('doorOpened', async (data) => {
-      const payload = await data.value();
-      this.handleDoorEvent(payload);
+    await this.consumedThings.doorSensor.subscribeEvent('doorOpened', async (data) => {
+      this.handleDoorEvent(await data.value());
     });
 
-    await this.windowSensor.subscribeEvent('windowOpened', async (data) => {
-      const payload = await data.value();
-      this.handleWindowEvent(payload);
+    await this.consumedThings.windowSensor.subscribeEvent('windowOpened', async (data) => {
+      this.handleWindowEvent(await data.value());
     });
 
-    await this.motionSensor.subscribeEvent('motionDetected', async (data) => {
-      const payload = await data.value();
-      this.handleMotionEvent(payload);
+    await this.consumedThings.motionSensor.subscribeEvent('motionDetected', async (data) => {
+      this.handleMotionEvent(await data.value());
     });
   }
 
-  // ---- Gestione eventi (logica applicativa invariata) ----
-
   handleDoorEvent(payload) {
     const label = payload.isOpen ? 'aperta' : 'chiusa';
-    console.log(`[Orchestrator] Evento WoT: Porta ${label}`);
+    console.log(`[Orchestrator] Evento: Porta ${label}`);
     if (this.securityMode && payload.isOpen) {
       this.triggerSecurityAlert('Porta aperta', 'critical');
     } else {
@@ -116,7 +84,7 @@ class Orchestrator {
 
   handleWindowEvent(payload) {
     const label = payload.isOpen ? 'aperta' : 'chiusa';
-    console.log(`[Orchestrator] Evento WoT: Finestra ${label}`);
+    console.log(`[Orchestrator] Evento: Finestra ${label}`);
     if (this.securityMode && payload.isOpen) {
       this.triggerSecurityAlert('Finestra aperta', 'critical');
     } else {
@@ -126,7 +94,7 @@ class Orchestrator {
 
   handleMotionEvent(payload) {
     const label = payload.motionDetected ? 'rilevato' : 'cessato';
-    console.log(`[Orchestrator] Evento WoT: Movimento ${label}`);
+    console.log(`[Orchestrator] Evento: Movimento ${label}`);
     if (this.securityMode && payload.motionDetected) {
       this.triggerSecurityAlert('Movimento rilevato', 'warning');
     } else {
@@ -134,73 +102,50 @@ class Orchestrator {
     }
   }
 
-  // ---- Azioni verso le altre Thing: solo invokeAction()/readProperty() ----
-
   async triggerSecurityAlert(message, severity = 'warning') {
     const alert = { timestamp: new Date().toISOString(), message, severity };
     this.alertHistory.push(alert);
 
-    try {
-      // Invocazione reale via WoT invece della chiamata diretta al metodo JS
-      await this.alarmSystem.invokeAction('triggerAlarm');
-      await this.notificationService.invokeAction('sendNotification', { message, severity });
-    } catch (err) {
-      console.error('[Orchestrator] Errore durante invokeAction:', err);
-    }
+    await this.consumedThings.alarmSystem.invokeAction('triggerAlarm');
+    await this.consumedThings.notificationService.invokeAction('sendNotification', { message, severity });
 
-    console.log(`[Orchestrator] ALERTA DI SICUREZZA: ${message}`);
-    this.broadcast({
-      type: 'log',
-      category: 'alert',
-      message: `⚠️ ${message} — allarme attivato, notifica inviata`
-    });
+    console.log(`[Orchestrator] ALLERTA DI SICUREZZA: ${message}`);
+    this.broadcast({ type: 'log', category: 'alert', message: `⚠️ ${message} — allarme attivato, notifica inviata` });
   }
 
   async activateSecurityMode() {
     this.securityMode = true;
     console.log('[Orchestrator] Modalità Sicurezza ATTIVATA');
-
-    await this.notificationService.invokeAction('sendNotification', {
+    await this.consumedThings.notificationService.invokeAction('sendNotification', {
       message: 'Modalità Sicurezza attivata - Away Mode',
       severity: 'info'
     });
-
     this.broadcast({ type: 'log', category: 'sensor', message: 'Modalità Sicurezza attivata' });
   }
 
   async deactivateSecurityMode() {
     this.securityMode = false;
-
-    await this.alarmSystem.invokeAction('resetAlarm');
+    await this.consumedThings.alarmSystem.invokeAction('resetAlarm');
     console.log('[Orchestrator] Modalità Sicurezza DISATTIVATA');
-
-    await this.notificationService.invokeAction('sendNotification', {
+    await this.consumedThings.notificationService.invokeAction('sendNotification', {
       message: 'Modalità Sicurezza disattivata',
       severity: 'info'
     });
-
-    this.broadcast({
-      type: 'log',
-      category: 'sensor',
-      message: 'Modalità Sicurezza disattivata — allarme resettato'
-    });
+    this.broadcast({ type: 'log', category: 'sensor', message: 'Modalità Sicurezza disattivata — allarme resettato' });
   }
 
-  // Property locale (stato interno dell'Orchestrator) + esempio di
-  // readProperty() reale su una ConsumedThing (alarmStatus dell'Alarm System).
-  async getProperty(propName) {
-    if (propName === 'securityMode') {
-      return { value: this.securityMode };
-    }
-    if (propName === 'alarmStatus' && this.alarmSystem) {
-      const output = await this.alarmSystem.readProperty('alarmStatus');
-      return { value: await output.value() };
-    }
+  getProperty(propName) {
+    if (propName === 'securityMode') return { value: this.securityMode };
     return null;
   }
 
-  getAlertHistory(limit = 10) { return this.alertHistory.slice(-limit); }
-  clearAlertHistory() { this.alertHistory = []; }
+  getAlertHistory(limit = 10) {
+    return this.alertHistory.slice(-limit);
+  }
+
+  clearAlertHistory() {
+    this.alertHistory = [];
+  }
 }
 
 module.exports = Orchestrator;

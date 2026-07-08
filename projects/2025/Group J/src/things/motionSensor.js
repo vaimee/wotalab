@@ -1,7 +1,7 @@
 /**
  * Motion Sensor Thing (Producer WoT)
  * Sensore che rileva movimento all'interno dell'ambiente.
- * Stessa logica di doorSensor.js/windowSensor.js, nessuna dipendenza da MQTT.
+ * Stessa logica di doorSensor.js/windowSensor.js.
  */
 
 const { Servient } = require('@node-wot/core');

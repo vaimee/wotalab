@@ -98,10 +98,7 @@ class NotificationService {
     return notification;
   }
 
-  // ---- API pubblica mantenuta per compatibilità con le route manuali di
-  // index.js (es. /things/notification-service/actions/sendNotification).
-  // L'Orchestrator (Consumer WoT) NON usa più questi metodi: interagisce con
-  // questa Thing esclusivamente tramite invokeAction() sulla sua TD reale. ----
+  // ---- API pubblica mantenuta per uso manuale/test da index.js ----
 
   sendNotification(message, severity = 'info') {
     return this._doSendNotification(message, severity);
