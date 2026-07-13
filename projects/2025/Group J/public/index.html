@@ -222,19 +222,83 @@
 
   <script>
     // ==================== CONFIGURAZIONE ====================
+    // API_BASE: SOLO endpoint dell'Orchestrator (non è una Thing, non ha una
+    // propria TD - vedi ontology.jsonld, classe proj:Consumer) e health check.
+    // DIRECTORY_URL: la Thing Directory (meccanismo di discovery WoT) da cui
+    // la dashboard scopre le Thing reali e le loro TD autogenerate da node-wot.
+    // Da qui in poi la dashboard NON parla più con nessun proxy REST manuale:
+    // legge property e invoca action usando gli href dichiarati nelle forms
+    // delle TD, esattamente come un qualunque WoT Consumer.
     const API_BASE = 'http://localhost:3000';
+    const DIRECTORY_URL = 'http://localhost:3009';
     const WS_URL = 'ws://localhost:3000';
-    
+
     let ws = null;
     let logs = [];
     let securityMode = false;
 
+    // Thing scoperte dalla Directory: title -> Thing Description reale
+    let things = {};
+
+    // ==================== WOT CONSUMER (discovery + forms) ====================
+
+    async function discoverThings() {
+      try {
+        const res = await fetch(`${DIRECTORY_URL}/things`);
+        if (!res.ok) throw new Error(`Discovery fallita: HTTP ${res.status}`);
+        const tds = await res.json();
+        things = {};
+        tds.forEach((td) => { things[td.title] = td; });
+        console.log('[WoT] Thing scoperte dalla Directory:', Object.keys(things));
+      } catch (err) {
+        console.error('[WoT] Errore discovery dalla Thing Directory:', err);
+      }
+    }
+
+    async function ensureThing(title) {
+      if (!things[title]) await discoverThings();
+      if (!things[title]) throw new Error(`Thing "${title}" non trovata nella Thing Directory`);
+      return things[title];
+    }
+
+    function pickForm(forms, op) {
+      if (!forms) return null;
+      return forms.find((f) => !f.op || f.op.includes(op)) || forms[0];
+    }
+
+    // Legge una Property invocando direttamente l'href dichiarato nella TD
+    // reale della Thing (generata da node-wot), non un proxy.
+    async function readProperty(title, propName) {
+      const td = await ensureThing(title);
+      const form = pickForm(td.properties?.[propName]?.forms, 'readproperty');
+      if (!form) throw new Error(`Property "${propName}" non dichiarata nella TD di "${title}"`);
+      const res = await fetch(form.href, { method: form['htv:methodName'] || 'GET' });
+      if (!res.ok) throw new Error(`Lettura "${propName}" fallita: HTTP ${res.status}`);
+      return res.json();
+    }
+
+    // Invoca una Action sull'href dichiarato nella TD reale della Thing.
+    async function invokeAction(title, actionName, input) {
+      const td = await ensureThing(title);
+      const form = pickForm(td.actions?.[actionName]?.forms, 'invokeaction');
+      if (!form) throw new Error(`Action "${actionName}" non dichiarata nella TD di "${title}"`);
+      const res = await fetch(form.href, {
+        method: form['htv:methodName'] || 'POST',
+        headers: input !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+        body: input !== undefined ? JSON.stringify(input) : undefined
+      });
+      if (!res.ok) throw new Error(`Invocazione "${actionName}" fallita: HTTP ${res.status}`);
+      const text = await res.text();
+      return text ? JSON.parse(text) : undefined;
+    }
+
     // ==================== INIZIALIZZAZIONE ====================
     
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       console.log('Dashboard caricata');
       initializeEventListeners();
       connectWebSocket();
+      await discoverThings();
       updateStatus();
       setInterval(updateStatus, 3000);
     });
@@ -340,13 +404,14 @@
 
     async function updateStatus() {
       try {
-        const response = await fetch(`${API_BASE}/api/status`);
-        if (!response.ok) throw new Error('Failed to fetch status');
-        const data = await response.json();
+        const [securityModeData, alarmStatus] = await Promise.all([
+          fetch(`${API_BASE}/orchestrator/properties/securityMode`).then((r) => r.json()),
+          readProperty('Alarm System', 'alarmStatus')
+        ]);
 
-        securityMode = data.securityMode;
+        securityMode = securityModeData.value;
         updateSecurityModeUI();
-        const triggered = data.alarmStatus === 'TRIGGERED';
+        const triggered = alarmStatus === 'TRIGGERED';
         document.getElementById('alarmStatus').textContent = triggered ? 'ATTIVATO' : 'Disattivato';
         setAlarmUI(triggered);
         updateLastUpdate();
@@ -430,20 +495,16 @@
 
     async function triggerAlarm() {
       try {
-        await fetch(`${API_BASE}/things/alarm-system/actions/triggerAlarm`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }
-        });
-      } catch (err) { console.error('Errore:', err); }
+        await invokeAction('Alarm System', 'triggerAlarm');
+      } catch (err) { console.error('Errore trigger allarme:', err); }
     }
 
     async function resetAlarm() {
       try {
-        await fetch(`${API_BASE}/things/alarm-system/actions/resetAlarm`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }
-        });
+        await invokeAction('Alarm System', 'resetAlarm');
         document.getElementById('alarmStatus').textContent = 'Disattivato';
         setAlarmUI(false);
-      } catch (err) { console.error('Errore:', err); }
+      } catch (err) { console.error('Errore reset allarme:', err); }
     }
 
     // ==================== SIMULAZIONE SENSORI (TOGGLE) ====================
@@ -454,10 +515,7 @@
       const btn = document.getElementById('simDoorBtn');
       const newState = !simState.door;
       try {
-        await fetch(`${API_BASE}/things/door-sensor/actions/setOpen`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ state: newState })
-        });
+        await invokeAction('Door Sensor', 'setOpen', newState);
         simState.door = newState;
         document.getElementById('doorStatus').textContent = newState ? 'Aperta' : 'Chiusa';
         btn.textContent = newState ? 'Chiudi Porta' : 'Simula Apertura Porta';
@@ -470,10 +528,7 @@
       const btn = document.getElementById('simWindowBtn');
       const newState = !simState.window;
       try {
-        await fetch(`${API_BASE}/things/window-sensor/actions/setOpen`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ state: newState })
-        });
+        await invokeAction('Window Sensor', 'setOpen', newState);
         simState.window = newState;
         document.getElementById('windowStatus').textContent = newState ? 'Aperte' : 'Chiuse';
         btn.textContent = newState ? 'Chiudi Finestra' : 'Simula Apertura Finestra';
@@ -486,10 +541,7 @@
       const btn = document.getElementById('simMotionBtn');
       const newState = !simState.motion;
       try {
-        await fetch(`${API_BASE}/things/motion-sensor/actions/setMotionDetected`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ state: newState })
-        });
+        await invokeAction('Motion Sensor', 'setMotionDetected', newState);
         simState.motion = newState;
         document.getElementById('motionStatus').textContent = newState ? 'Rilevato' : 'Inattivo';
         btn.textContent = newState ? 'Ferma Movimento' : 'Simula Movimento Rilevato';

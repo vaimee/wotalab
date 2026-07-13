@@ -1,12 +1,15 @@
 /**
  * Window Sensor Thing (Producer WoT)
  * Sensore che rileva apertura e chiusura delle finestre.
- * Stessa logica di doorSensor.js.
+ * Stessa logica di doorSensor.js, incluse autoregistrazione nella Thing
+ * Directory e annotazione semantica reale da ontology.jsonld.
  */
 
 const { Servient } = require('@node-wot/core');
 const { HttpServer } = require('@node-wot/binding-http');
+const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const { getOntologyContext, getClass } = require('../ontology/ontologyLoader');
 
 class WindowSensor {
   constructor(options = {}) {
@@ -16,6 +19,7 @@ class WindowSensor {
     this.isOpen = false;
 
     this.httpPort = options.httpPort || 3002;
+    this.directoryUrl = options.directoryUrl || null;
 
     this.exposedThing = null;
     this.thingDescription = null;
@@ -25,12 +29,19 @@ class WindowSensor {
 
   async _exposeAsThing() {
     this.servient = new Servient();
-    this.servient.addServer(new HttpServer({ port: this.httpPort }));
+    this.servient.addServer(
+      new HttpServer({
+        port: this.httpPort,
+        baseUri: `http://localhost:${this.httpPort}`,
+        middleware: cors()
+      })
+    );
 
     const WoT = await this.servient.start();
 
     this.exposedThing = await WoT.produce({
-      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }],
+      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }, getOntologyContext()],
+      '@type': getClass('WindowSensor'),
       id: `urn:wot:window-sensor:${this.id}`,
       title: this.title,
       description: this.description,
@@ -82,6 +93,23 @@ class WindowSensor {
     this.thingDescription = this.exposedThing.getThingDescription();
 
     console.log(`[WindowSensor] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/window-sensor`);
+
+    await this._registerInDirectory();
+  }
+
+  async _registerInDirectory() {
+    if (!this.directoryUrl) return;
+    try {
+      const res = await fetch(`${this.directoryUrl}/things`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.thingDescription)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      console.log(`[WindowSensor] Registrata nella Thing Directory (${this.directoryUrl})`);
+    } catch (err) {
+      console.error(`[WindowSensor] Registrazione nella Directory fallita: ${err.message}`);
+    }
   }
 
   _doSetOpen(state) {

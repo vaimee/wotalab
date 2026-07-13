@@ -2,15 +2,25 @@
  * Application Entry Point
  * Smart Home Security System - Web of Things
  *
- * Architettura finale:
+ * Architettura:
  * - ogni Thing è un vero Producer WoT (node-wot), esposta su una porta HTTP
- *   dedicata con una TD generata realmente da ciò che la Thing sa fare.
- * - l'Orchestrator è un vero Consumer WoT: riceve solo gli URL delle TD,
+ *   dedicata con una TD generata realmente da ciò che la Thing sa fare, e si
+ *   autoregistra in una Thing Directory (meccanismo di discovery WoT).
+ * - la Thing Directory (porta 3009) è l'unico punto in cui Orchestrator e
+ *   dashboard scoprono le Thing: nessun URL di Thing è più hardcoded.
+ * - l'Orchestrator è un vero Consumer WoT: scopre le TD tramite la Directory,
  *   le consuma (WoT.consume) e interagisce esclusivamente tramite
  *   invokeAction/readProperty/subscribeEvent.
- * - il broker/client MQTT della versione precedente è stato rimosso: non
- *   serviva più a nulla, perché l'Orchestrator riceve gli eventi via
- *   subscribeEvent (HTTP long-polling, come dichiarato nei forms della TD).
+ * - questo server (porta 3000) NON espone più un proxy REST manuale
+ *   parallelo alle Thing: quello era il problema originale (doppia
+ *   implementazione, dashboard che non consumava le TD reali). Espone solo
+ *   endpoint che non duplicano interazioni già dichiarate in una TD:
+ *   health check, azioni/proprietà dell'Orchestrator (che non è una Thing)
+ *   e cronologia (alert/notifiche) per la dashboard.
+ * - la dashboard (public/index.html) consuma direttamente le Thing reali:
+ *   scopre le TD dalla Directory e usa gli href dichiarati nelle forms per
+ *   leggere property e invocare action, esattamente come farebbe un
+ *   qualunque Consumer WoT.
  */
 
 const express = require('express');
@@ -24,9 +34,11 @@ const MotionSensor = require('./things/motionSensor');
 const AlarmSystem = require('./things/alarmSystem');
 const NotificationService = require('./things/notificationService');
 const Orchestrator = require('./orchestrator/orchestrator');
+const ThingDirectory = require('./directory/thingDirectory');
 
 const app = express();
 const HTTP_PORT = 3000;
+const DIRECTORY_PORT = 3009;
 
 // Porte HTTP dedicate a ciascuna Thing (ognuna è un Producer WoT indipendente,
 // con il proprio endpoint generato da node-wot).
@@ -47,20 +59,30 @@ console.log('\n' + '='.repeat(60));
 console.log('Smart Home Security System - Web of Things');
 console.log('='.repeat(60) + '\n');
 
-let doorSensor, windowSensor, motionSensor, alarmSystem, notificationService, orchestrator;
+let directory, doorSensor, windowSensor, motionSensor, alarmSystem, notificationService, orchestrator;
 let systemReady = false;
 
 let broadcast = () => {};
 
 async function startSystem() {
-  doorSensor = new DoorSensor({ httpPort: THING_PORTS.doorSensor });
-  windowSensor = new WindowSensor({ httpPort: THING_PORTS.windowSensor });
-  motionSensor = new MotionSensor({ httpPort: THING_PORTS.motionSensor });
-  alarmSystem = new AlarmSystem(broadcast, { httpPort: THING_PORTS.alarmSystem });
-  notificationService = new NotificationService(broadcast, { httpPort: THING_PORTS.notificationService });
+  // La Thing Directory deve essere già in ascolto prima che le Thing
+  // provino ad autoregistrarsi.
+  directory = new ThingDirectory({ port: DIRECTORY_PORT });
+  await directory.ready;
+  const directoryUrl = `http://localhost:${DIRECTORY_PORT}`;
+
+  doorSensor = new DoorSensor({ httpPort: THING_PORTS.doorSensor, directoryUrl });
+  windowSensor = new WindowSensor({ httpPort: THING_PORTS.windowSensor, directoryUrl });
+  motionSensor = new MotionSensor({ httpPort: THING_PORTS.motionSensor, directoryUrl });
+  alarmSystem = new AlarmSystem(broadcast, { httpPort: THING_PORTS.alarmSystem, directoryUrl });
+  notificationService = new NotificationService(broadcast, {
+    httpPort: THING_PORTS.notificationService,
+    directoryUrl
+  });
 
   // Attende che ogni Thing abbia finito di esporsi come Producer WoT
-  // (Servient + HTTP binding avviati, TD generata).
+  // (Servient + HTTP binding avviati, TD generata) E di autoregistrarsi
+  // nella Thing Directory.
   await Promise.all([
     doorSensor.ready,
     windowSensor.ready,
@@ -69,24 +91,16 @@ async function startSystem() {
     notificationService.ready
   ]);
 
-  console.log('✓ [System] Tutte le Things esposte come veri WoT Producer');
+  console.log('✓ [System] Tutte le Things esposte come veri WoT Producer e registrate nella Thing Directory');
 
-  // L'Orchestrator è un vero Consumer WoT: riceve solo gli URL delle TD,
-  // le consuma lui stesso (WoT.requestThingDescription + WoT.consume) e
+  // L'Orchestrator è un vero Consumer WoT: scopre le TD interrogando la
+  // Thing Directory (nessun URL hardcoded), le consuma con WoT.consume e
   // interagisce solo tramite invokeAction/readProperty/subscribeEvent.
-  const thingUrls = {
-    doorSensor: `http://localhost:${THING_PORTS.doorSensor}/door-sensor`,
-    windowSensor: `http://localhost:${THING_PORTS.windowSensor}/window-sensor`,
-    motionSensor: `http://localhost:${THING_PORTS.motionSensor}/motion-sensor`,
-    alarmSystem: `http://localhost:${THING_PORTS.alarmSystem}/alarm-system`,
-    notificationService: `http://localhost:${THING_PORTS.notificationService}/notification-service`
-  };
-
-  orchestrator = new Orchestrator(thingUrls, broadcast);
+  orchestrator = new Orchestrator(directoryUrl, broadcast);
   await orchestrator.ready;
 
   systemReady = true;
-  console.log('✓ [System] Orchestrator attivo come Consumer WoT\n');
+  console.log('✓ [System] Orchestrator attivo come Consumer WoT (discovery via Thing Directory)\n');
 }
 
 // ==================== Utility Functions ====================
@@ -112,160 +126,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ==================== Thing Description Routes ====================
-// Proxano la TD reale generata da node-wot. La TD "autorevole" resta
-// comunque quella esposta direttamente dalla Thing sulla propria porta
-// (es. http://localhost:3004/alarm-system).
-
-app.get('/things/door-sensor/td', async (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(await doorSensor.getThingDescription());
-});
-
-app.get('/things/window-sensor/td', async (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(await windowSensor.getThingDescription());
-});
-
-app.get('/things/motion-sensor/td', async (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(await motionSensor.getThingDescription());
-});
-
-app.get('/things/alarm-system/td', async (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(await alarmSystem.getThingDescription());
-});
-
-app.get('/things/notification-service/td', async (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(await notificationService.getThingDescription());
-});
-
-// ==================== Door Sensor Properties ====================
-
-app.get('/things/door-sensor/properties/isOpen', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(doorSensor.getProperty('isOpen'));
-});
-
-app.get('/things/door-sensor/properties/lastUpdate', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(doorSensor.getProperty('lastUpdate'));
-});
-
-app.get('/things/door-sensor/properties', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(doorSensor.getAllProperties());
-});
-
-// ==================== Window Sensor Properties ====================
-
-app.get('/things/window-sensor/properties/isOpen', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(windowSensor.getProperty('isOpen'));
-});
-
-app.get('/things/window-sensor/properties/lastUpdate', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(windowSensor.getProperty('lastUpdate'));
-});
-
-app.get('/things/window-sensor/properties', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(windowSensor.getAllProperties());
-});
-
-// ==================== Motion Sensor Properties ====================
-
-app.get('/things/motion-sensor/properties/motionDetected', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(motionSensor.getProperty('motionDetected'));
-});
-
-app.get('/things/motion-sensor/properties/lastUpdate', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(motionSensor.getProperty('lastUpdate'));
-});
-
-app.get('/things/motion-sensor/properties', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(motionSensor.getAllProperties());
-});
-
-// ==================== Alarm System Properties ====================
-
-app.get('/things/alarm-system/properties/alarmStatus', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(alarmSystem.getProperty('alarmStatus'));
-});
-
-app.get('/things/alarm-system/properties', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json(alarmSystem.getAllProperties());
-});
-
-// ==================== Manual Sensor Actions ====================
-
-app.post('/things/door-sensor/actions/setOpen', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  const { state } = req.body;
-  if (typeof state !== 'boolean') {
-    return res.status(400).json({ error: 'state must be a boolean' });
-  }
-  doorSensor.setOpen(state);
-  res.json({ result: 'Door state updated', isOpen: state });
-});
-
-app.post('/things/window-sensor/actions/setOpen', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  const { state } = req.body;
-  if (typeof state !== 'boolean') {
-    return res.status(400).json({ error: 'state must be a boolean' });
-  }
-  windowSensor.setOpen(state);
-  res.json({ result: 'Window state updated', isOpen: state });
-});
-
-app.post('/things/motion-sensor/actions/setMotionDetected', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  const { state } = req.body;
-  if (typeof state !== 'boolean') {
-    return res.status(400).json({ error: 'state must be a boolean' });
-  }
-  motionSensor.setMotionDetected(state);
-  res.json({ result: 'Motion state updated', motionDetected: state });
-});
-
-// ==================== Alarm System Actions ====================
-
-app.post('/things/alarm-system/actions/triggerAlarm', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  alarmSystem.triggerAlarm();
-  broadcast({ type: 'log', category: 'alert', message: '⚠️ Allarme attivato manualmente' });
-  res.json({ result: 'Alarm triggered', alarmStatus: 'TRIGGERED' });
-});
-
-app.post('/things/alarm-system/actions/resetAlarm', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  alarmSystem.resetAlarm();
-  broadcast({ type: 'log', category: 'sensor', message: 'Allarme resettato' });
-  res.json({ result: 'Alarm reset', alarmStatus: 'RESET' });
-});
-
-// ==================== Notification Service Actions ====================
-
-app.post('/things/notification-service/actions/sendNotification', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  const { message, severity = 'info' } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
-  }
-  const notification = notificationService.sendNotification(message, severity);
-  res.json({ result: 'Notification sent', notification });
-});
-
 // ==================== Orchestrator Properties ====================
+// Nota: qui sotto NON ci sono più route "/things/*". Ogni Thing è già
+// raggiungibile direttamente sulla propria porta HTTP con la propria TD
+// autogenerata da node-wot (es. http://localhost:3001/door-sensor), e
+// scopribile tramite la Thing Directory (http://localhost:3009/things).
+// Riesporle qui sotto un'altra URL sarebbe di nuovo la doppia
+// implementazione che si voleva eliminare. L'Orchestrator invece NON è una
+// Thing (non ha una propria TD, per scelta di progetto — vedi
+// ontology.jsonld, classe proj:Consumer), quindi le sue property/action
+// restano legittimamente qui.
 
 app.get('/orchestrator/properties/securityMode', (req, res) => {
   if (!ensureInitialized(res)) return;
@@ -287,32 +157,12 @@ app.post('/orchestrator/actions/deactivateSecurityMode', async (req, res) => {
 });
 
 // ==================== API Summary Routes ====================
-
-app.get('/api/things', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json({
-    things: [
-      { id: 'door-sensor', title: 'Door Sensor', type: 'Sensor', uri: '/things/door-sensor/td', wotUri: `http://localhost:${THING_PORTS.doorSensor}/door-sensor` },
-      { id: 'window-sensor', title: 'Window Sensor', type: 'Sensor', uri: '/things/window-sensor/td', wotUri: `http://localhost:${THING_PORTS.windowSensor}/window-sensor` },
-      { id: 'motion-sensor', title: 'Motion Sensor', type: 'Sensor', uri: '/things/motion-sensor/td', wotUri: `http://localhost:${THING_PORTS.motionSensor}/motion-sensor` },
-      { id: 'alarm-system', title: 'Alarm System', type: 'Actuator', uri: '/things/alarm-system/td', wotUri: `http://localhost:${THING_PORTS.alarmSystem}/alarm-system` },
-      { id: 'notification-service', title: 'Notification Service', type: 'Service', uri: '/things/notification-service/td', wotUri: `http://localhost:${THING_PORTS.notificationService}/notification-service` }
-    ]
-  });
-});
-
-app.get('/api/status', (req, res) => {
-  if (!ensureInitialized(res)) return;
-  res.json({
-    systemStatus: 'operational',
-    securityMode: orchestrator.securityMode,
-    alarmStatus: alarmSystem.alarmStatus,
-    doorOpen: doorSensor.isOpen,
-    windowOpen: windowSensor.isOpen,
-    motionDetected: motionSensor.motionDetected,
-    timestamp: new Date().toISOString()
-  });
-});
+// La lista delle Thing e lo stato delle loro property non si trovano più
+// qui: la dashboard li ottiene scoprendo le Thing dalla Thing Directory
+// (GET http://localhost:3009/things) e leggendo le property direttamente
+// dagli href dichiarati nelle rispettive TD. Qui restano solo cronologie
+// applicative (alert/notifiche) che non sono interaction affordance
+// dichiarate in nessuna TD.
 
 app.get('/api/alerts', (req, res) => {
   if (!ensureInitialized(res)) return;

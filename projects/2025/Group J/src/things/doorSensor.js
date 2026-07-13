@@ -7,11 +7,17 @@
  * Gli eventi vengono emessi tramite emitEvent() ed esposti via HTTP
  * (long-polling), come dichiarato nei forms della TD: non c'è più alcuna
  * pubblicazione MQTT manuale, l'unico canale è quello del binding WoT.
+ *
+ * Dopo l'expose(), la Thing si autoregistra nella Thing Directory (WoT
+ * Discovery) inviando la propria TD reale: è così che Orchestrator e
+ * dashboard la scoprono, invece di avere l'URL hardcoded.
  */
 
 const { Servient } = require('@node-wot/core');
 const { HttpServer } = require('@node-wot/binding-http');
+const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const { getOntologyContext, getClass } = require('../ontology/ontologyLoader');
 
 class DoorSensor {
   constructor(options = {}) {
@@ -21,6 +27,7 @@ class DoorSensor {
     this.isOpen = false;
 
     this.httpPort = options.httpPort || 3001;
+    this.directoryUrl = options.directoryUrl || null;
 
     this.exposedThing = null;
     this.thingDescription = null;
@@ -30,12 +37,19 @@ class DoorSensor {
 
   async _exposeAsThing() {
     this.servient = new Servient();
-    this.servient.addServer(new HttpServer({ port: this.httpPort }));
+    this.servient.addServer(
+      new HttpServer({
+        port: this.httpPort,
+        baseUri: `http://localhost:${this.httpPort}`,
+        middleware: cors()
+      })
+    );
 
     const WoT = await this.servient.start();
 
     this.exposedThing = await WoT.produce({
-      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }],
+      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }, getOntologyContext()],
+      '@type': getClass('DoorSensor'),
       id: `urn:wot:door-sensor:${this.id}`,
       title: this.title,
       description: this.description,
@@ -87,6 +101,23 @@ class DoorSensor {
     this.thingDescription = this.exposedThing.getThingDescription();
 
     console.log(`[DoorSensor] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/door-sensor`);
+
+    await this._registerInDirectory();
+  }
+
+  async _registerInDirectory() {
+    if (!this.directoryUrl) return;
+    try {
+      const res = await fetch(`${this.directoryUrl}/things`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.thingDescription)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      console.log(`[DoorSensor] Registrata nella Thing Directory (${this.directoryUrl})`);
+    } catch (err) {
+      console.error(`[DoorSensor] Registrazione nella Directory fallita: ${err.message}`);
+    }
   }
 
   _doSetOpen(state) {

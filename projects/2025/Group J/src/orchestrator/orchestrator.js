@@ -2,12 +2,11 @@
  * Orchestrator (Consumer WoT)
  * Gestisce la logica applicativa e coordina le interazioni tra le Things.
  *
- * Differenza fondamentale rispetto alla versione precedente: l'Orchestrator
- * non riceve più le Thing come istanze JavaScript da chiamare direttamente
- * (this.alarmSystem.triggerAlarm()). Riceve solo gli URL delle loro Thing
- * Description, e:
- *  1. scarica ciascuna TD con WoT.requestThingDescription(url)
- *  2. la consuma con WoT.consume(td), ottenendo un ConsumedThing
+ * L'Orchestrator non riceve le Thing come istanze JavaScript da chiamare
+ * direttamente (this.alarmSystem.triggerAlarm()), né URL hardcoded delle
+ * loro TD. Scopre le Thing interrogando la Thing Directory (WoT Discovery):
+ *  1. GET {directoryUrl}/things -> elenco delle TD reali autoregistrate
+ *  2. WoT.consume(td) su ciascuna TD trovata, ottenendo un ConsumedThing
  *  3. interagisce SOLO tramite invokeAction() / readProperty() / subscribeEvent(),
  *     cioè tramite ciò che la TD dichiara — non tramite conoscenza diretta
  *     dell'implementazione della Thing.
@@ -20,14 +19,24 @@
 const { Servient } = require('@node-wot/core');
 const { HttpClientFactory } = require('@node-wot/binding-http');
 
+// Titoli delle Thing come dichiarati nelle rispettive TD: usati per
+// riconoscere quale TD scoperta nella Directory corrisponde a quale ruolo
+// applicativo, senza fare assunzioni su URL o porte.
+const THING_TITLES = {
+  doorSensor: 'Door Sensor',
+  windowSensor: 'Window Sensor',
+  motionSensor: 'Motion Sensor',
+  alarmSystem: 'Alarm System',
+  notificationService: 'Notification Service'
+};
+
 class Orchestrator {
   /**
-   * @param {object} thingUrls - URL delle TD delle Thing da consumare
-   *   { doorSensor, windowSensor, motionSensor, alarmSystem, notificationService }
+   * @param {string} directoryUrl - URL base della Thing Directory da interrogare per la discovery
    * @param {function} broadcast - callback verso i client WebSocket della dashboard
    */
-  constructor(thingUrls, broadcast) {
-    this.thingUrls = thingUrls;
+  constructor(directoryUrl, broadcast) {
+    this.directoryUrl = directoryUrl;
     this.broadcast = broadcast || (() => {});
 
     this.securityMode = false;
@@ -42,19 +51,36 @@ class Orchestrator {
     this.servient.addClientFactory(new HttpClientFactory());
     this.WoT = await this.servient.start();
 
-    this.consumedThings.doorSensor = await this._consume(this.thingUrls.doorSensor);
-    this.consumedThings.windowSensor = await this._consume(this.thingUrls.windowSensor);
-    this.consumedThings.motionSensor = await this._consume(this.thingUrls.motionSensor);
-    this.consumedThings.alarmSystem = await this._consume(this.thingUrls.alarmSystem);
-    this.consumedThings.notificationService = await this._consume(this.thingUrls.notificationService);
+    const discoveredTDs = await this._discoverThings();
+
+    this.consumedThings.doorSensor = await this._consumeByTitle(discoveredTDs, THING_TITLES.doorSensor);
+    this.consumedThings.windowSensor = await this._consumeByTitle(discoveredTDs, THING_TITLES.windowSensor);
+    this.consumedThings.motionSensor = await this._consumeByTitle(discoveredTDs, THING_TITLES.motionSensor);
+    this.consumedThings.alarmSystem = await this._consumeByTitle(discoveredTDs, THING_TITLES.alarmSystem);
+    this.consumedThings.notificationService = await this._consumeByTitle(
+      discoveredTDs,
+      THING_TITLES.notificationService
+    );
 
     await this._subscribeToEvents();
 
-    console.log('[Orchestrator] Tutte le TD consumate, sottoscritto agli eventi dei sensori');
+    console.log('[Orchestrator] Thing scoperte via Thing Directory e consumate, sottoscritto agli eventi dei sensori');
   }
 
-  async _consume(url) {
-    const td = await this.WoT.requestThingDescription(url);
+  /** Interroga la Thing Directory e ritorna tutte le TD registrate. */
+  async _discoverThings() {
+    const res = await fetch(`${this.directoryUrl}/things`);
+    if (!res.ok) {
+      throw new Error(`[Orchestrator] Discovery fallita: la Thing Directory ha risposto ${res.status}`);
+    }
+    return res.json();
+  }
+
+  async _consumeByTitle(discoveredTDs, title) {
+    const td = discoveredTDs.find((t) => t.title === title);
+    if (!td) {
+      throw new Error(`[Orchestrator] Nessuna Thing con title "${title}" trovata nella Thing Directory`);
+    }
     return this.WoT.consume(td);
   }
 

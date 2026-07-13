@@ -5,7 +5,9 @@
 
 const { Servient } = require('@node-wot/core');
 const { HttpServer } = require('@node-wot/binding-http');
+const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
+const { getOntologyContext, getClass } = require('../ontology/ontologyLoader');
 
 class NotificationService {
   constructor(broadcast, options = {}) {
@@ -16,6 +18,7 @@ class NotificationService {
 
     this.broadcast = broadcast || (() => {});
     this.httpPort = options.httpPort || 3005;
+    this.directoryUrl = options.directoryUrl || null;
 
     this.exposedThing = null;
     this.thingDescription = null;
@@ -25,12 +28,19 @@ class NotificationService {
 
   async _exposeAsThing() {
     this.servient = new Servient();
-    this.servient.addServer(new HttpServer({ port: this.httpPort }));
+    this.servient.addServer(
+      new HttpServer({
+        port: this.httpPort,
+        baseUri: `http://localhost:${this.httpPort}`,
+        middleware: cors()
+      })
+    );
 
     const WoT = await this.servient.start();
 
     this.exposedThing = await WoT.produce({
-      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }],
+      '@context': ['https://www.w3.org/2022/wot/td/v1.1', { '@language': 'it' }, getOntologyContext()],
+      '@type': getClass('NotificationService'),
       id: `urn:wot:notification-service:${this.id}`,
       title: this.title,
       description: this.description,
@@ -78,6 +88,23 @@ class NotificationService {
     this.thingDescription = this.exposedThing.getThingDescription();
 
     console.log(`[NotificationService] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/notification-service`);
+
+    await this._registerInDirectory();
+  }
+
+  async _registerInDirectory() {
+    if (!this.directoryUrl) return;
+    try {
+      const res = await fetch(`${this.directoryUrl}/things`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.thingDescription)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      console.log(`[NotificationService] Registrata nella Thing Directory (${this.directoryUrl})`);
+    } catch (err) {
+      console.error(`[NotificationService] Registrazione nella Directory fallita: ${err.message}`);
+    }
   }
 
   _doSendNotification(message, severity = 'info') {
