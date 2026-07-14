@@ -10,13 +10,12 @@ const { v4: uuidv4 } = require('uuid');
 const { getOntologyContext, getClass } = require('../ontology/ontologyLoader');
 
 class NotificationService {
-  constructor(broadcast, options = {}) {
+  constructor(options = {}) {
     this.id = uuidv4();
     this.title = 'Notification Service';
     this.description = "Servizio che simula l'invio di notifiche all'utente";
     this.notifications = [];
 
-    this.broadcast = broadcast || (() => {});
     this.httpPort = options.httpPort || 3005;
     this.directoryUrl = options.directoryUrl || null;
 

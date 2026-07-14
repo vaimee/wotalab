@@ -72,8 +72,8 @@ async function startSystem() {
   doorSensor = new DoorSensor({ httpPort: THING_PORTS.doorSensor, directoryUrl });
   windowSensor = new WindowSensor({ httpPort: THING_PORTS.windowSensor, directoryUrl });
   motionSensor = new MotionSensor({ httpPort: THING_PORTS.motionSensor, directoryUrl });
-  alarmSystem = new AlarmSystem(broadcast, { httpPort: THING_PORTS.alarmSystem, directoryUrl });
-  notificationService = new NotificationService(broadcast, {
+  alarmSystem = new AlarmSystem({ httpPort: THING_PORTS.alarmSystem, directoryUrl });
+  notificationService = new NotificationService({
     httpPort: THING_PORTS.notificationService,
     directoryUrl
   });
@@ -212,8 +212,9 @@ wss.on('connection', (ws) => {
 });
 
 // Avvia le Thing e l'Orchestrator solo ora, dopo che `broadcast` è stato
-// assegnato alla funzione reale: così alarmSystem/notificationService
-// vengono costruiti con il broadcast vero, non con il placeholder no-op.
+// assegnato alla funzione reale: così l'Orchestrator (unico componente che
+// notifica la dashboard via WebSocket) viene costruito con il broadcast
+// vero, non con il placeholder no-op.
 startSystem()
   .then(() => {
     console.log('Server avviato. Premi CTRL+C per arrestare.\n');

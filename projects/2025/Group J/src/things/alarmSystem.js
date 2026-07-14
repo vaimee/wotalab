@@ -16,15 +16,13 @@ const { getOntologyContext, getClass } = require('../ontology/ontologyLoader');
 
 class AlarmSystem {
   /**
-   * @param {function} broadcast - callback verso i client WebSocket della dashboard
    * @param {object} options - { httpPort, directoryUrl }
    */
-  constructor(broadcast, options = {}) {
+  constructor(options = {}) {
     this.id = uuidv4();
     this.title = 'Alarm System';
     this.alarmStatus = 'RESET'; // RESET | TRIGGERED
 
-    this.broadcast = broadcast || (() => {});
     this.httpPort = options.httpPort || 3004;
     this.directoryUrl = options.directoryUrl || null;
 
