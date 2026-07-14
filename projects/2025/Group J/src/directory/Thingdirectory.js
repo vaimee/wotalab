@@ -1,12 +1,12 @@
 /**
  * Thing Directory (WoT Discovery)
  *
- * Sostituisce gli URL hardcoded nell'Orchestrator con un vero meccanismo
- * di discovery: ogni Thing, dopo essersi esposta come Producer node-wot,
- * si autoregistra qui inviando la propria TD reale (POST /things).
- * Chiunque voglia scoprire le Thing del sistema (Orchestrator, dashboard,
- * un tool esterno) lo fa parlando SOLO con questo servizio, non con la
- * conoscenza a priori delle porte delle singole Thing.
+ * Fornisce un meccanismo di discovery per le Thing del sistema: ogni Thing,
+ * dopo essersi esposta come Producer node-wot, si autoregistra qui
+ * inviando la propria TD (POST /things). Chiunque voglia scoprire le Thing
+ * del sistema (Orchestrator, dashboard, un tool esterno) lo fa parlando
+ * solo con questo servizio, senza avere conoscenza a priori delle porte
+ * delle singole Thing.
  *
  * Espone anche il well-known URL della TD Discovery (introduction
  * mechanism previsto da W3C WoT Discovery) e supporta query semantiche

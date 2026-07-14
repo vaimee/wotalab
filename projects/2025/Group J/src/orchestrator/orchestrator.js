@@ -2,18 +2,17 @@
  * Orchestrator (Consumer WoT)
  * Gestisce la logica applicativa e coordina le interazioni tra le Things.
  *
- * L'Orchestrator non riceve le Thing come istanze JavaScript da chiamare
- * direttamente (this.alarmSystem.triggerAlarm()), né URL hardcoded delle
- * loro TD. Scopre le Thing interrogando la Thing Directory (WoT Discovery):
- *  1. GET {directoryUrl}/things -> elenco delle TD reali autoregistrate
+ * L'Orchestrator interagisce con le Thing esclusivamente come un WoT
+ * Consumer: non conosce URL o istanze delle Thing a priori, le scopre
+ * interrogando la Thing Directory (WoT Discovery):
+ *  1. GET {directoryUrl}/things -> elenco delle TD registrate
  *  2. WoT.consume(td) su ciascuna TD trovata, ottenendo un ConsumedThing
  *  3. interagisce SOLO tramite invokeAction() / readProperty() / subscribeEvent(),
- *     cioè tramite ciò che la TD dichiara — non tramite conoscenza diretta
- *     dell'implementazione della Thing.
+ *     cioè tramite ciò che la TD dichiara.
  *
  * Il trasporto usato (HTTP, con eventi via long-polling) è quello dichiarato
- * nei forms della TD: l'Orchestrator non lo sceglie né lo conosce a priori,
- * lo scopre leggendo la TD.
+ * nei forms della TD: l'Orchestrator lo scopre leggendo la TD, non lo
+ * conosce a priori.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -167,10 +166,6 @@ class Orchestrator {
 
   getAlertHistory(limit = 10) {
     return this.alertHistory.slice(-limit);
-  }
-
-  clearAlertHistory() {
-    this.alertHistory = [];
   }
 }
 

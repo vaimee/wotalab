@@ -79,7 +79,7 @@
       "@type": "owl:Class",
       "subClassOf": ["proj:InteractionAffordance", "td:EventAffordance"],
       "label": "Event",
-      "comment": "Notifica asincrona generata da una Thing al verificarsi di una condizione, distribuita via publish/subscribe MQTT."
+      "comment": "Notifica asincrona generata da una Thing al verificarsi di una condizione, distribuita in modalita' publish/subscribe tramite long-polling HTTP (operazione subscribeevent del binding WoT)."
     },
 
     {
@@ -93,14 +93,7 @@
       "@type": "owl:Class",
       "subClassOf": "proj:ProtocolBinding",
       "label": "HTTPBinding",
-      "comment": "Usato per operazioni sincrone request/response: readproperty sulle Property, invokeaction sulle Action."
-    },
-    {
-      "@id": "proj:MQTTBinding",
-      "@type": "owl:Class",
-      "subClassOf": "proj:ProtocolBinding",
-      "label": "MQTTBinding",
-      "comment": "Usato per la distribuzione asincrona degli Event tramite publish/subscribe (operazione subscribeevent)."
+      "comment": "Unico protocol binding usato dal sistema: operazioni sincrone request/response (readproperty sulle Property, invokeaction sulle Action) e sottoscrizione asincrona agli Event tramite long-polling (subscribeevent)."
     },
 
     {
@@ -136,21 +129,21 @@
       "@type": "owl:ObjectProperty",
       "domain": "proj:Consumer",
       "range": "proj:Event",
-      "comment": "Il Consumer si sottoscrive a un Event di una Thing via MQTT (vedi Orchestrator.subscribeToEvents)."
+      "comment": "Il Consumer si sottoscrive a un Event di una Thing consumata (WoT subscribeEvent, via long-polling HTTP) - vedi Orchestrator._subscribeToEvents()."
     },
     {
       "@id": "proj:invokesAction",
       "@type": "owl:ObjectProperty",
       "domain": "proj:Consumer",
       "range": "proj:Action",
-      "comment": "Il Consumer invoca direttamente una Action su una Thing (vedi Orchestrator che chiama alarmSystem.triggerAlarm(), alarmSystem.resetAlarm() e notificationService.sendNotification())."
+      "comment": "Il Consumer invoca una Action su una Thing consumata (WoT invokeAction) - vedi Orchestrator.triggerSecurityAlert(), che chiama invokeAction('triggerAlarm') su AlarmSystem e invokeAction('sendNotification') su NotificationService."
     },
     {
       "@id": "proj:triggers",
       "@type": "owl:ObjectProperty",
       "domain": "proj:Event",
       "range": "proj:Action",
-      "comment": "Relazione di causalita' applicativa mediata dall'Orchestrator: un Event in arrivo, se securityMode e' attivo, fa scattare in parallelo triggerAlarm (su AlarmSystem) e sendNotification (su NotificationService). Esempi: doorOpened -> triggerAlarm + sendNotification, windowOpened -> triggerAlarm + sendNotification, motionOccurred -> triggerAlarm + sendNotification."
+      "comment": "Relazione di causalita' applicativa mediata dall'Orchestrator: un Event in arrivo, se securityMode e' attivo, fa scattare in parallelo triggerAlarm (su AlarmSystem) e sendNotification (su NotificationService). Esempi: doorOpened -> triggerAlarm + sendNotification, windowOpened -> triggerAlarm + sendNotification, motionDetected -> triggerAlarm + sendNotification."
     },
 
     {
@@ -172,14 +165,14 @@
       "@type": "owl:Class",
       "subClassOf": "proj:Sensor",
       "label": "MotionSensor",
-      "comment": "Property: motionDetected (boolean, readOnly), lastUpdate (string ISO 8601, readOnly). Event: motionOccurred (topic MQTT: events/motion-sensor/motionDetected; payload: timestamp, motionDetected). Nessuna Action."
+      "comment": "Property: motionDetected (boolean, readOnly), lastUpdate (string ISO 8601, readOnly). Event: motionDetected (payload: timestamp, motionDetected). Nessuna Action."
     },
     {
       "@id": "proj:AlarmSystem",
       "@type": "owl:Class",
       "subClassOf": "proj:Actuator",
       "label": "AlarmSystem",
-      "comment": "Property: alarmStatus (string enum RESET/TRIGGERED, readOnly). Action: triggerAlarm (output: timestamp, alarmStatus=TRIGGERED), resetAlarm (output: timestamp, alarmStatus=RESET). Event: alarmTriggered (payload: timestamp, alarmStatus=TRIGGERED), alarmReset (payload: timestamp, alarmStatus=RESET)."
+      "comment": "Property: alarmStatus (string enum RESET/TRIGGERED, readOnly). Action: triggerAlarm (porta alarmStatus a TRIGGERED), resetAlarm (porta alarmStatus a RESET). Event: alarmTriggered (payload: timestamp, alarmStatus=TRIGGERED), emesso solo da triggerAlarm."
     },
     {
       "@id": "proj:NotificationService",
@@ -193,7 +186,7 @@
       "@type": "owl:Class",
       "subClassOf": "proj:Consumer",
       "label": "Orchestrator",
-      "comment": "Non e' una WoT Thing (nessuna Thing Description propria). Mantiene lo stato applicativo securityMode (boolean) e alertHistory (array). Si sottoscrive via MQTT a: doorOpened, windowOpened, motionOccurred. Se securityMode e' attivo invoca in parallelo alarmSystem.triggerAlarm() e notificationService.sendNotification() con severity critical o warning. Espone inoltre activateSecurityMode() e deactivateSecurityMode() che invocano rispettivamente sendNotification e resetAlarm."
+      "comment": "Non e' una WoT Thing (nessuna Thing Description propria). Scopre le Thing tramite la Thing Directory e le consuma con WoT.consume(). Mantiene lo stato applicativo securityMode (boolean) e alertHistory (array). Si sottoscrive (subscribeEvent) a: doorOpened, windowOpened, motionDetected. Se securityMode e' attivo, un evento di apertura o movimento fa scattare in parallelo invokeAction('triggerAlarm') su AlarmSystem e invokeAction('sendNotification') su NotificationService. Espone inoltre activateSecurityMode() e deactivateSecurityMode(): la prima invoca sendNotification, la seconda invoca resetAlarm e poi sendNotification."
     }
   ]
 }

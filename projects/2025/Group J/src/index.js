@@ -3,24 +3,22 @@
  * Smart Home Security System - Web of Things
  *
  * Architettura:
- * - ogni Thing è un vero Producer WoT (node-wot), esposta su una porta HTTP
- *   dedicata con una TD generata realmente da ciò che la Thing sa fare, e si
- *   autoregistra in una Thing Directory (meccanismo di discovery WoT).
+ * - ogni Thing è un Producer WoT (node-wot), esposta su una porta HTTP
+ *   dedicata con una TD generata dal runtime a partire da ciò che la Thing
+ *   sa fare, e si autoregistra in una Thing Directory (meccanismo di
+ *   discovery WoT).
  * - la Thing Directory (porta 3009) è l'unico punto in cui Orchestrator e
- *   dashboard scoprono le Thing: nessun URL di Thing è più hardcoded.
- * - l'Orchestrator è un vero Consumer WoT: scopre le TD tramite la Directory,
+ *   dashboard scoprono le Thing disponibili.
+ * - l'Orchestrator è un Consumer WoT: scopre le TD tramite la Directory,
  *   le consuma (WoT.consume) e interagisce esclusivamente tramite
  *   invokeAction/readProperty/subscribeEvent.
- * - questo server (porta 3000) NON espone più un proxy REST manuale
- *   parallelo alle Thing: quello era il problema originale (doppia
- *   implementazione, dashboard che non consumava le TD reali). Espone solo
- *   endpoint che non duplicano interazioni già dichiarate in una TD:
- *   health check, azioni/proprietà dell'Orchestrator (che non è una Thing)
- *   e cronologia (alert/notifiche) per la dashboard.
- * - la dashboard (public/index.html) consuma direttamente le Thing reali:
- *   scopre le TD dalla Directory e usa gli href dichiarati nelle forms per
- *   leggere property e invocare action, esattamente come farebbe un
- *   qualunque Consumer WoT.
+ * - questo server (porta 3000) espone solo ciò che non è già
+ *   un'interazione dichiarata in una TD di dispositivo: health check,
+ *   azioni/proprietà dell'Orchestrator (che non è una Thing) e cronologia
+ *   (alert/notifiche) per la dashboard.
+ * - la dashboard (public/index.html) è anch'essa un Consumer WoT: scopre
+ *   le TD dalla Directory e usa gli href dichiarati nelle forms per
+ *   leggere property e invocare action.
  */
 
 const express = require('express');
@@ -91,9 +89,9 @@ async function startSystem() {
     notificationService.ready
   ]);
 
-  console.log('✓ [System] Tutte le Things esposte come veri WoT Producer e registrate nella Thing Directory');
+  console.log('✓ [System] Thing esposte come WoT Producer e registrate nella Thing Directory');
 
-  // L'Orchestrator è un vero Consumer WoT: scopre le TD interrogando la
+  // L'Orchestrator è un Consumer WoT: scopre le TD interrogando la
   // Thing Directory (nessun URL hardcoded), le consuma con WoT.consume e
   // interagisce solo tramite invokeAction/readProperty/subscribeEvent.
   orchestrator = new Orchestrator(directoryUrl, broadcast);
@@ -127,12 +125,10 @@ app.get('/health', (req, res) => {
 });
 
 // ==================== Orchestrator Properties ====================
-// Nota: qui sotto NON ci sono più route "/things/*". Ogni Thing è già
-// raggiungibile direttamente sulla propria porta HTTP con la propria TD
-// autogenerata da node-wot (es. http://localhost:3001/door-sensor), e
-// scopribile tramite la Thing Directory (http://localhost:3009/things).
-// Riesporle qui sotto un'altra URL sarebbe di nuovo la doppia
-// implementazione che si voleva eliminare. L'Orchestrator invece NON è una
+// Ogni Thing è raggiungibile direttamente sulla propria porta HTTP con la
+// propria TD (es. http://localhost:3001/door-sensor) ed è scopribile
+// tramite la Thing Directory (http://localhost:3009/things): qui non
+// vengono quindi esposte route "/things/*". L'Orchestrator non è una
 // Thing (non ha una propria TD, per scelta di progetto — vedi
 // ontology.jsonld, classe proj:Consumer), quindi le sue property/action
 // restano legittimamente qui.
@@ -157,12 +153,11 @@ app.post('/orchestrator/actions/deactivateSecurityMode', async (req, res) => {
 });
 
 // ==================== API Summary Routes ====================
-// La lista delle Thing e lo stato delle loro property non si trovano più
-// qui: la dashboard li ottiene scoprendo le Thing dalla Thing Directory
-// (GET http://localhost:3009/things) e leggendo le property direttamente
-// dagli href dichiarati nelle rispettive TD. Qui restano solo cronologie
-// applicative (alert/notifiche) che non sono interaction affordance
-// dichiarate in nessuna TD.
+// La lista delle Thing e lo stato delle loro property si ottengono
+// interrogando la Thing Directory (GET http://localhost:3009/things) e
+// leggendo poi le property direttamente dagli href dichiarati nelle
+// rispettive TD. Qui restano solo cronologie applicative (alert/notifiche)
+// che non sono interaction affordance dichiarate in nessuna TD.
 
 app.get('/api/alerts', (req, res) => {
   if (!ensureInitialized(res)) return;

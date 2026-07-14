@@ -2,7 +2,7 @@
  * Window Sensor Thing (Producer WoT)
  * Sensore che rileva apertura e chiusura delle finestre.
  * Stessa logica di doorSensor.js, incluse autoregistrazione nella Thing
- * Directory e annotazione semantica reale da ontology.jsonld.
+ * Directory e annotazione semantica tramite ontology.jsonld.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -92,7 +92,7 @@ class WindowSensor {
     await this.exposedThing.expose();
     this.thingDescription = this.exposedThing.getThingDescription();
 
-    console.log(`[WindowSensor] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/window-sensor`);
+    console.log(`[WindowSensor] Thing esposta su http://localhost:${this.httpPort}/window-sensor`);
 
     await this._registerInDirectory();
   }
@@ -124,27 +124,6 @@ class WindowSensor {
     }
   }
 
-  setOpen(state) {
-    this._doSetOpen(state);
-  }
-
-  getProperty(propName) {
-    if (propName === 'isOpen') return { value: this.isOpen };
-    if (propName === 'lastUpdate') return { value: new Date().toISOString() };
-    return null;
-  }
-
-  getAllProperties() {
-    return {
-      isOpen: this.isOpen,
-      lastUpdate: new Date().toISOString()
-    };
-  }
-
-  async getThingDescription() {
-    await this.ready;
-    return this.thingDescription;
-  }
 }
 
 module.exports = WindowSensor;

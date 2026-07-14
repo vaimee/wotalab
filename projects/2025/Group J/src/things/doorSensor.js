@@ -2,15 +2,14 @@
  * Door Sensor Thing (Producer WoT)
  * Sensore che rileva apertura e chiusura della porta.
  *
- * La TD è generata da node-wot a partire da un vero ExposedThing.
+ * La TD è generata da node-wot a partire da un ExposedThing.
  * L'azione "setOpen" (uso manuale/test) è dichiarata nella TD.
  * Gli eventi vengono emessi tramite emitEvent() ed esposti via HTTP
- * (long-polling), come dichiarato nei forms della TD: non c'è più alcuna
- * pubblicazione MQTT manuale, l'unico canale è quello del binding WoT.
+ * (long-polling), come dichiarato nei forms della TD.
  *
  * Dopo l'expose(), la Thing si autoregistra nella Thing Directory (WoT
- * Discovery) inviando la propria TD reale: è così che Orchestrator e
- * dashboard la scoprono, invece di avere l'URL hardcoded.
+ * Discovery) inviando la propria TD: è così che Orchestrator e dashboard
+ * la scoprono.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -100,7 +99,7 @@ class DoorSensor {
     await this.exposedThing.expose();
     this.thingDescription = this.exposedThing.getThingDescription();
 
-    console.log(`[DoorSensor] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/door-sensor`);
+    console.log(`[DoorSensor] Thing esposta su http://localhost:${this.httpPort}/door-sensor`);
 
     await this._registerInDirectory();
   }
@@ -132,29 +131,6 @@ class DoorSensor {
     }
   }
 
-  // ---- API pubblica mantenuta per uso manuale/test da index.js ----
-
-  setOpen(state) {
-    this._doSetOpen(state);
-  }
-
-  getProperty(propName) {
-    if (propName === 'isOpen') return { value: this.isOpen };
-    if (propName === 'lastUpdate') return { value: new Date().toISOString() };
-    return null;
-  }
-
-  getAllProperties() {
-    return {
-      isOpen: this.isOpen,
-      lastUpdate: new Date().toISOString()
-    };
-  }
-
-  async getThingDescription() {
-    await this.ready;
-    return this.thingDescription;
-  }
 }
 
 module.exports = DoorSensor;

@@ -2,10 +2,10 @@
  * Alarm System Thing (Producer WoT)
  * Sistema responsabile dell'attivazione e del reset dell'allarme.
  *
- * La TD è generata da node-wot a partire da un vero ExposedThing, con
- * property/action/evento collegati a handler reali. L'unico canale di
- * comunicazione è quello dichiarato nella TD (HTTP, con eventi via
- * long-polling): nessuna pubblicazione MQTT manuale residua.
+ * La TD è generata da node-wot a partire da un ExposedThing, con
+ * property/action/evento collegati ai rispettivi handler. L'unico canale
+ * di comunicazione è quello dichiarato nella TD (HTTP, con eventi via
+ * long-polling).
  */
 
 const { Servient } = require('@node-wot/core');
@@ -99,7 +99,7 @@ class AlarmSystem {
     await this.exposedThing.expose();
     this.thingDescription = this.exposedThing.getThingDescription();
 
-    console.log(`[AlarmSystem] Esposta come vera WoT Thing su http://localhost:${this.httpPort}/alarm-system`);
+    console.log(`[AlarmSystem] Thing esposta su http://localhost:${this.httpPort}/alarm-system`);
 
     await this._registerInDirectory();
   }
@@ -138,31 +138,6 @@ class AlarmSystem {
     console.log('[AlarmSystem] Allarme resettato');
   }
 
-  // ---- API pubblica mantenuta per uso manuale/test da index.js ----
-
-  triggerAlarm() {
-    this._doTrigger();
-  }
-
-  resetAlarm() {
-    this._doReset();
-  }
-
-  getProperty(propName) {
-    if (propName === 'alarmStatus') {
-      return { value: this.alarmStatus };
-    }
-    return null;
-  }
-
-  getAllProperties() {
-    return { alarmStatus: this.alarmStatus };
-  }
-
-  async getThingDescription() {
-    await this.ready;
-    return this.thingDescription;
-  }
 }
 
 module.exports = AlarmSystem;

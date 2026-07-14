@@ -225,10 +225,9 @@
     // API_BASE: SOLO endpoint dell'Orchestrator (non è una Thing, non ha una
     // propria TD - vedi ontology.jsonld, classe proj:Consumer) e health check.
     // DIRECTORY_URL: la Thing Directory (meccanismo di discovery WoT) da cui
-    // la dashboard scopre le Thing reali e le loro TD autogenerate da node-wot.
-    // Da qui in poi la dashboard NON parla più con nessun proxy REST manuale:
-    // legge property e invoca action usando gli href dichiarati nelle forms
-    // delle TD, esattamente come un qualunque WoT Consumer.
+    // la dashboard scopre le Thing e le loro TD autogenerate da node-wot.
+    // La dashboard è un WoT Consumer: legge property e invoca action usando
+    // gli href dichiarati nelle forms delle TD.
     const API_BASE = 'http://localhost:3000';
     const DIRECTORY_URL = 'http://localhost:3009';
     const WS_URL = 'ws://localhost:3000';
@@ -237,7 +236,7 @@
     let logs = [];
     let securityMode = false;
 
-    // Thing scoperte dalla Directory: title -> Thing Description reale
+    // Thing scoperte dalla Directory: title -> Thing Description
     let things = {};
 
     // ==================== WOT CONSUMER (discovery + forms) ====================
@@ -267,7 +266,7 @@
     }
 
     // Legge una Property invocando direttamente l'href dichiarato nella TD
-    // reale della Thing (generata da node-wot), non un proxy.
+    // della Thing (generata da node-wot).
     async function readProperty(title, propName) {
       const td = await ensureThing(title);
       const form = pickForm(td.properties?.[propName]?.forms, 'readproperty');
@@ -277,7 +276,7 @@
       return res.json();
     }
 
-    // Invoca una Action sull'href dichiarato nella TD reale della Thing.
+    // Invoca una Action sull'href dichiarato nella TD della Thing.
     async function invokeAction(title, actionName, input) {
       const td = await ensureThing(title);
       const form = pickForm(td.actions?.[actionName]?.forms, 'invokeaction');

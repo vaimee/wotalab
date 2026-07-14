@@ -2,7 +2,7 @@
  * Motion Sensor Thing (Producer WoT)
  * Sensore che rileva movimento all'interno dell'ambiente.
  * Stessa logica di doorSensor.js/windowSensor.js, incluse autoregistrazione
- * nella Thing Directory e annotazione semantica reale da ontology.jsonld.
+ * nella Thing Directory e annotazione semantica tramite ontology.jsonld.
  */
 
 const { Servient } = require('@node-wot/core');
@@ -92,7 +92,7 @@ class MotionSensor {
     await this.exposedThing.expose();
     this.thingDescription = this.exposedThing.getThingDescription();
 
-    console.log(`[MotionSensor] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/motion-sensor`);
+    console.log(`[MotionSensor] Thing esposta su http://localhost:${this.httpPort}/motion-sensor`);
 
     await this._registerInDirectory();
   }
@@ -124,27 +124,6 @@ class MotionSensor {
     }
   }
 
-  setMotionDetected(state) {
-    this._doSetMotionDetected(state);
-  }
-
-  getProperty(propName) {
-    if (propName === 'motionDetected') return { value: this.motionDetected };
-    if (propName === 'lastUpdate') return { value: new Date().toISOString() };
-    return null;
-  }
-
-  getAllProperties() {
-    return {
-      motionDetected: this.motionDetected,
-      lastUpdate: new Date().toISOString()
-    };
-  }
-
-  async getThingDescription() {
-    await this.ready;
-    return this.thingDescription;
-  }
 }
 
 module.exports = MotionSensor;

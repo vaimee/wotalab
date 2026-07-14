@@ -87,7 +87,7 @@ class NotificationService {
     await this.exposedThing.expose();
     this.thingDescription = this.exposedThing.getThingDescription();
 
-    console.log(`[NotificationService] Esposto come vera WoT Thing su http://localhost:${this.httpPort}/notification-service`);
+    console.log(`[NotificationService] Thing esposta su http://localhost:${this.httpPort}/notification-service`);
 
     await this._registerInDirectory();
   }
@@ -125,23 +125,8 @@ class NotificationService {
     return notification;
   }
 
-  // ---- API pubblica mantenuta per uso manuale/test da index.js ----
-
-  sendNotification(message, severity = 'info') {
-    return this._doSendNotification(message, severity);
-  }
-
   getNotifications(limit = 10) {
     return this.notifications.slice(-limit);
-  }
-
-  clearNotifications() {
-    this.notifications = [];
-  }
-
-  async getThingDescription() {
-    await this.ready;
-    return this.thingDescription;
   }
 }
 

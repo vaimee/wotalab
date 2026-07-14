@@ -1,13 +1,13 @@
 /**
  * Ontology Loader
  *
- * Carica realmente ontology/ontology.jsonld e la usa in due punti del
- * sistema (non è più un file solo documentale):
+ * Carica ontology/ontology.jsonld da disco e la usa in due punti del
+ * sistema:
  *
  *  1. Ogni Thing (doorSensor, windowSensor, ...) chiede a questo modulo
  *     l'IRI della propria classe (es. "proj:DoorSensor") e la usa come
  *     "@type" della propria Thing Description. Se la classe non esiste
- *     più nell'ontologia, la Thing non si avvia: è una dipendenza reale,
+ *     nell'ontologia, la Thing non si avvia: è una dipendenza funzionale,
  *     non decorativa.
  *  2. La Thing Directory usa l'ontologia per rispondere a query semantiche
  *     come GET /things?type=Sensor, risalendo la gerarchia subClassOf
