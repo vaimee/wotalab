@@ -13,7 +13,6 @@ export { DEVICE_TOPIC_ROOT, commandTopic, telemetryTopic } from "./mqtt-device";
  * dispositivo fisico. La scelta sta fuori dal codice (`REAL_COMPONENTS`),
  * cosi' il livello WoT non cambia quando una parte diventa reale.
  */
-
 /** Legge `REAL_COMPONENTS`, ignorando i nomi non riconosciuti. */
 export const parseRealComponents = (raw: string | undefined): ComponentName[] => {
   if (!raw) {
