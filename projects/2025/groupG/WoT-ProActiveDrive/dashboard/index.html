@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WoT-ProActiveDrive Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <div class="bg-grid"></div>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">WoT-ProActiveDrive</p>
+          <h1>Intelligenza Propulsore Ibrido</h1>
+          <p class="subtitle">Telemetria in tempo reale, diagnostica a soglie e controllo remoto.</p>
+          <div class="hero-badges">
+            <span class="badge">WoT Live</span>
+            <span class="badge">Digital Twin</span>
+            <span class="badge">Predittivo</span>
+          </div>
+        </div>
+        <div class="status-panel">
+          <p class="status-label">Stato connessione</p>
+          <div class="status-pill" id="connectionStatus">Offline</div>
+          <p class="status-note">Aggiornamento ogni 2s</p>
+        </div>
+      </header>
+
+      <section class="cards">
+        <div class="card" id="batteryCard">
+          <h3>Carica Batteria</h3>
+          <p class="metric" id="batterySoC">--%</p>
+          <p class="hint" id="rangeHint">-- km autonomia stimata</p>
+        </div>
+        <div class="card">
+          <h3>Regime Motore</h3>
+          <p class="metric" id="engineRPM">--</p>
+          <p class="hint">Coppia: <span id="torqueNm">--</span> Nm</p>
+        </div>
+        <div class="card">
+          <h3>Temperatura</h3>
+          <p class="metric" id="temperatureC">--</p>
+          <p class="hint">Soglia critica a 90 C</p>
+        </div>
+        <div class="card">
+          <h3>Efficienza Sistema</h3>
+          <p class="metric" id="systemEfficiency">--</p>
+          <p class="hint">Media mobile esponenziale</p>
+        </div>
+      </section>
+
+      <section class="split">
+        <div class="card strong">
+          <h3>Modalita Guida</h3>
+          <p class="hint">Attuazione remota tramite azione WoT</p>
+          <div class="button-group" id="driveModeButtons">
+            <button data-mode="Full Electric">Elettrica</button>
+            <button data-mode="Hybrid" class="active">Hybrid</button>
+            <button data-mode="Sport">Sport</button>
+            <button data-mode="Save">Risparmio</button>
+          </div>
+        </div>
+        <div class="card strong">
+          <h3>Frenata Rigenerativa</h3>
+          <p class="hint">Gestione recupero energia</p>
+          <div class="button-group" id="regenButtons">
+            <button data-regen="1">Livello 1</button>
+            <button data-regen="2">Livello 2</button>
+            <button data-regen="3">Livello 3</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls">
+        <div class="card">
+          <h3>Allarmi</h3>
+          <ul class="alerts" id="alertsList">
+            <li class="muted">Nessun allarme.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="charts">
+        <div class="card">
+          <h3>Andamento SoC</h3>
+          <canvas id="socChart"></canvas>
+        </div>
+        <div class="card">
+          <h3>Andamento Efficienza</h3>
+          <canvas id="effChart"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
