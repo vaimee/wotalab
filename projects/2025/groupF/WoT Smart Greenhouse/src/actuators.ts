@@ -1,95 +1,114 @@
+/**
+ * Thing "Pompa Irrigazione Serra" — ruolo WoT: Producer (Exposed Thing).
+ *
+ * Espone la property di sola lettura pumpStatus e l'action turnOnPump, che
+ * avvia l'irrigazione per una durata in secondi. L'endpoint è protetto dallo
+ * schema di sicurezza "bearer" della TD: senza header Authorization le
+ * richieste ricevono 401.
+ *
+ * turnOnPump è modellata come Action e non come property scrivibile perché è
+ * un processo con una durata che agisce sullo stato fisico nel tempo, che è
+ * esattamente il criterio della specifica W3C.
+ */
+
 import { Servient } from "@node-wot/core";
 import { HttpServer } from "@node-wot/binding-http";
-import td from "./td/pump-actuator.td.json";
 
-// Inizializza il Servient WoT per l'attuatore della pompa
-const servient = new Servient();
+import { BASE_URIS, PORTS, PUMP_TOKEN, THING_IDS } from "./config";
+import { PUMP_TITLE, loadPumpThingDescription } from "./thing-description";
 
-// Aggiunge il server HTTP sulla porta 8082 con sicurezza Bearer
-const httpServer = new HttpServer({ 
-  port: 8082,
-  security: [
-    { scheme: "bearer" }
-  ]
-});
+/** Limiti accettati per la durata, coerenti con l'input schema della TD. */
+const MIN_DURATION_SECONDS = 1;
+const MAX_DURATION_SECONDS = 300;
 
-// Patch per risolvere un bug di node-wot nella validazione del token Bearer (case sensitivity)
-const originalCheckCredentials = (httpServer as any).checkCredentials.bind(httpServer);
-(httpServer as any).checkCredentials = async (thing: any, req: any) => {
-  const selected = thing.security[0];
-  const schemeDef = thing.securityDefinitions[selected];
-  const originalScheme = schemeDef.scheme;
-  if (originalScheme === "bearer") {
-    schemeDef.scheme = "Bearer";
-  }
-  try {
-    return await originalCheckCredentials(thing, req);
-  } finally {
-    schemeDef.scheme = originalScheme;
-  }
-};
+/**
+ * Workaround per un bug di node-wot 0.8 nella validazione del Bearer token.
+ *
+ * Il server confronta lo scheme in modo case-sensitive contro la stringa
+ * "Bearer", mentre la specifica W3C richiede che nella TD sia scritto in
+ * minuscolo ("bearer"). Il risultato è che una TD conforme non viene mai
+ * autenticata. Qui alziamo temporaneamente lo scheme per la durata del
+ * controllo e lo ripristiniamo subito dopo, così il documento TD resta
+ * conforme alla specifica e il runtime funziona.
+ */
+function patchBearerCaseSensitivity(server: HttpServer): void {
+  const server_ = server as unknown as {
+    checkCredentials(thing: any, req: unknown): Promise<boolean>;
+  };
+  const original = server_.checkCredentials.bind(server);
 
-servient.addServer(httpServer);
+  server_.checkCredentials = async (thing: any, req: unknown) => {
+    const definition = thing.securityDefinitions[thing.security[0]];
+    if (definition?.scheme !== "bearer") {
+      return original(thing, req);
+    }
+    definition.scheme = "Bearer";
+    try {
+      return await original(thing, req);
+    } finally {
+      definition.scheme = "bearer";
+    }
+  };
+}
 
-// Definisce la chiave segreta (token Bearer) per l'accesso protetto all'attuatore
-servient.addCredentials({
-  "urn:dev:wot:greenhouse-irrigation-pump-01": {
-    token: "chiave-segreta-pompa"
-  }
-});
+async function main(): Promise<void> {
+  // --- Stato interno --------------------------------------------------------
+  let pumpRunning = false;
 
-// Variabili per memorizzare lo stato reale degli attuatori
-let pumpRunning = false;
-let pumpTimeout: NodeJS.Timeout | null = null;
+  // --- Servient -------------------------------------------------------------
+  const httpServer = new HttpServer({
+    port: PORTS.pump,
+    // baseUri: senza, gli href della TD userebbero l'IP interno del container.
+    baseUri: BASE_URIS.pump,
+    security: [{ scheme: "bearer" }],
+  });
+  patchBearerCaseSensitivity(httpServer);
 
-servient.start().then(async (WoT) => {
-  try {
-    // Produce il Thing della pompa a partire dal file di descrizione JSON-LD
-    const exposedThing = await WoT.produce(td as any);
-    
-    // Gestore per leggere lo stato attuale della pompa
-    exposedThing.setPropertyReadHandler("pumpStatus", async () => {
-      console.log(`[ATTUATORE] Lettura stato pompa: ${pumpRunning ? "ATTIVO" : "SPENTO"}`);
-      return pumpRunning;
-    });
+  const servient = new Servient();
+  servient.addServer(httpServer);
 
-    // Gestore per attivare la pompa
-    exposedThing.setActionHandler("turnOnPump", async (params) => {
-      // Estrae la durata dall'input
-      const inputData = await params.value();
-      const duration = Number(inputData);
+  // Il token è un Private Security Data: sta nel Servient, mai nella TD, che
+  // dichiara soltanto quale meccanismo di sicurezza usare.
+  servient.addCredentials({ [THING_IDS.pump]: { token: PUMP_TOKEN } });
 
-      if (isNaN(duration) || duration <= 0) {
-        throw new Error("Durata di irrigazione non valida.");
-      }
+  const WoT = await servient.start();
+  const thing = await WoT.produce(loadPumpThingDescription());
 
-      console.log(`[ATTUATORE] Ricevuto comando: avvio pompa per ${duration} secondi.`);
+  thing.setPropertyReadHandler("pumpStatus", async () => pumpRunning);
 
-      // Se la pompa è già attiva, rifiuta il comando per evitare attivazioni concorrenti
-      if (pumpRunning) {
-        console.log("[ATTUATORE] Rifiutato comando avvio: la pompa è già attiva.");
-        throw new Error("La pompa è già attiva.");
-      }
+  thing.setActionHandler("turnOnPump", async (params) => {
+    const duration = Number(await params.value());
 
-      pumpRunning = true;
-      console.log("[ATTUATORE] >>> POMPA ACCESA (irrigazione in corso) <<<");
+    if (!Number.isFinite(duration) || duration < MIN_DURATION_SECONDS || duration > MAX_DURATION_SECONDS) {
+      throw new Error(
+        `Durata non valida: attesi ${MIN_DURATION_SECONDS}-${MAX_DURATION_SECONDS} secondi, ricevuto ${String(duration)}.`
+      );
+    }
 
-      // Spegnimento automatico al termine della durata impostata
-      pumpTimeout = setTimeout(() => {
-        pumpRunning = false;
-        pumpTimeout = null;
-        console.log("[ATTUATORE] >>> POMPA SPENTA (irrigazione terminata) <<<");
-      }, duration * 1000);
+    // Un secondo comando mentre la pompa è già attiva viene rifiutato: due
+    // cicli sovrapposti allagherebbero il terreno e falserebbero pumpStatus.
+    if (pumpRunning) {
+      throw new Error("La pompa è già attiva.");
+    }
 
-      return undefined;
-    });
+    pumpRunning = true;
+    console.log(`[ATTUATORE] Pompa accesa per ${duration} s.`);
 
-    // Espone l'attuatore sulla porta 8082
-    await exposedThing.expose();
-    console.log("Attuatore Pompa pronto su http://localhost:8082/greenhouse-irrigation-pump");
-  } catch (error) {
-    console.error("Errore durante la creazione del Thing della pompa:", error);
-  }
-}).catch((err) => {
-  console.error("Errore durante l'avvio del Servient degli attuatori:", err);
+    // Lo spegnimento è differito: è ciò che rende turnOnPump un processo che
+    // manipola lo stato fisico nel tempo, e non una semplice scrittura.
+    setTimeout(() => {
+      pumpRunning = false;
+      console.log("[ATTUATORE] Pompa spenta, irrigazione terminata.");
+    }, duration * 1000);
+
+    return `Irrigazione avviata per ${duration} secondi.`;
+  });
+
+  await thing.expose();
+  console.log(`[ATTUATORE] Thing "${PUMP_TITLE}" online, HTTP protetto sulla porta ${PORTS.pump}.`);
+}
+
+main().catch((error) => {
+  console.error("[ATTUATORE] Avvio fallito:", error);
+  process.exitCode = 1;
 });

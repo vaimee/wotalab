@@ -13,11 +13,8 @@ RUN npm ci
 # Copia il codice sorgente dell'applicazione
 COPY src ./src
 
-# Compila il codice TypeScript in JavaScript
+# Compila il TypeScript; lo script postbuild copia dashboard e immagini in dist/
 RUN npm run build
-
-# Copia i file HTML della dashboard nella directory di produzione 'dist'.
-RUN mkdir -p dist/dashboard && cp src/dashboard/*.html dist/dashboard/
 
 # Rimuove le dipendenze di sviluppo (devDependencies) per ridurre la dimensione del container
 RUN npm prune --production

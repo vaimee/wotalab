@@ -1,143 +1,88 @@
+/**
+ * Thing "Sensore Ambientale Serra" — ruolo WoT: Producer (Exposed Thing).
+ *
+ * Espone via HTTP le property temperature, humidity e activeGreenhouse, e
+ * pubblica periodicamente l'evento environmentalData sul broker MQTT.
+ *
+ * Sono i due binding di protocollo del progetto: HTTP per la lettura puntuale
+ * dello stato (request/response) e MQTT per la telemetria (publish/subscribe).
+ */
+
 import { Servient } from "@node-wot/core";
-import { MqttClientFactory, MqttBrokerServer } from "@node-wot/binding-mqtt";
 import { HttpServer } from "@node-wot/binding-http";
-import td from "./td/environmental-sensor.td.json";
-import { createServer } from "http";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { MqttBrokerServer, MqttClientFactory } from "@node-wot/binding-mqtt";
 
-// Inizializza il Servient WoT per il sensore
-const servient = new Servient();
+import { BASE_URIS, MQTT_BROKER, PORTS, TELEMETRY_INTERVAL } from "./config";
+import {
+  GreenhouseType,
+  isGreenhouseType,
+  simulateReading,
+} from "./greenhouse";
+import { startDashboardServer } from "./dashboard-server";
+import { SENSOR_TITLE, loadSensorThingDescription } from "./thing-description";
 
-// Configura il broker MQTT (usa localhost se non diversamente specificato)
-const MQTT_BROKER = process.env.MQTT_BROKER || "mqtt://localhost:1883";
+async function main(): Promise<void> {
+  // --- Stato interno del Thing ---------------------------------------------
+  // I valori esposti dalle property. Il loop di telemetria li aggiorna, gli
+  // handler di lettura li restituiscono.
+  let temperature = 22.5;
+  let humidity = 45.0;
+  let activeGreenhouse: GreenhouseType = "tropical";
 
-servient.addClientFactory(new MqttClientFactory());
-servient.addServer(new MqttBrokerServer({ uri: MQTT_BROKER }));
-servient.addServer(new HttpServer({ port: 8080 }));
+  // --- Servient: come il Thing viene esposto in rete ------------------------
+  const servient = new Servient();
+  // baseUri: senza, gli href della TD userebbero l'IP interno del container.
+  servient.addServer(new HttpServer({ port: PORTS.sensor, baseUri: BASE_URIS.sensor }));
+  servient.addServer(new MqttBrokerServer({ uri: MQTT_BROKER }));
+  servient.addClientFactory(new MqttClientFactory());
 
-console.log(`[SENSORE] Avvio con Broker MQTT: ${MQTT_BROKER} e Server HTTP sulla porta 8080`);
+  console.log(`[SENSORE] HTTP sulla porta ${PORTS.sensor}, broker MQTT ${MQTT_BROKER}`);
 
-servient.start().then(async (WoT) => {
-  // Clona la descrizione del sensore per inserire dinamicamente l'URL del broker MQTT configurato
-  const environmentalSensorTd = JSON.parse(JSON.stringify(td));
-  const originalHref = environmentalSensorTd.events.environmentalData.forms[0].href;
-  const topicPath = new URL(originalHref).pathname;
-  environmentalSensorTd.events.environmentalData.forms[0].href = `${MQTT_BROKER}${topicPath}`;
+  const WoT = await servient.start();
+  const thing = await WoT.produce(loadSensorThingDescription());
 
-  try {
-    // Variabili per mantenere i dati dei sensori e la configurazione della serra
-    let latestTemperature = 22.5;
-    let latestHumidity = 45.0;
-    let activeGreenhouse = "tropical";
+  // --- Handler delle property ----------------------------------------------
+  thing.setPropertyReadHandler("temperature", async () => temperature);
+  thing.setPropertyReadHandler("humidity", async () => humidity);
+  thing.setPropertyReadHandler("activeGreenhouse", async () => activeGreenhouse);
 
-    // Produce il Thing del sensore
-    const exposedThing = await WoT.produce(environmentalSensorTd);
+  // activeGreenhouse è l'unica property scrivibile: è stato di configurazione,
+  // non un processo, quindi è una Property e non una Action.
+  thing.setPropertyWriteHandler("activeGreenhouse", async (value) => {
+    const requested = await value.value();
+    if (!isGreenhouseType(requested)) {
+      throw new Error(`Tipo di serra non supportato: ${String(requested)}`);
+    }
+    activeGreenhouse = requested;
+    console.log(`[SENSORE] Serra impostata su ${activeGreenhouse.toUpperCase()}`);
+  });
 
-    // Gestori di lettura per le proprietà
-    exposedThing.setPropertyReadHandler("temperature", async () => latestTemperature);
-    exposedThing.setPropertyReadHandler("humidity", async () => latestHumidity);
-    exposedThing.setPropertyReadHandler("activeGreenhouse", async () => activeGreenhouse);
+  await thing.expose();
+  console.log(`[SENSORE] Thing "${SENSOR_TITLE}" online su HTTP e MQTT.`);
 
-    // Gestore di scrittura per cambiare tipo di serra
-    exposedThing.setPropertyWriteHandler("activeGreenhouse", async (val) => {
-      const newVal = await val.value() as string;
-      if (newVal === "tropical" || newVal === "mediterranean") {
-        activeGreenhouse = newVal;
-        console.log(`[SENSORE] Tipo di serra modificato a: ${activeGreenhouse.toUpperCase()}`);
-        return undefined;
-      }
-      throw new Error("Tipo di serra non supportato.");
-    });
+  startDashboardServer(PORTS.dashboard);
 
-    // Espone il Thing in rete
-    await exposedThing.expose();
-    console.log(`[SENSORE] Thing "${environmentalSensorTd.title}" online su HTTP e MQTT.`);
+  // --- Loop di telemetria ---------------------------------------------------
+  // Genera una lettura coerente con il profilo della serra attiva e la
+  // pubblica come evento: i subscriber MQTT la ricevono in push, senza polling.
+  setInterval(async () => {
+    const reading = simulateReading(activeGreenhouse);
+    temperature = reading.temperature;
+    humidity = reading.humidity;
 
-    // Server web separato sulla porta 8081 per mostrare la Dashboard HTML e i suoi fogli di stile
-    const dashboardServer = createServer((req, res) => {
-      const parsedUrl = new URL(req.url || "", `http://${req.headers.host || 'localhost'}`);
-      const pathname = parsedUrl.pathname;
-      let fileName = "";
-      let contentType = "text/html; charset=utf-8";
+    console.log(
+      `[SENSORE] ${activeGreenhouse.toUpperCase()} -> ${temperature} °C, ${humidity} %`
+    );
 
-      if (pathname === "/" || pathname === "/index.html") {
-        fileName = "index.html";
-      } else if (pathname === "/dashboard" || pathname === "/dashboard.html") {
-        fileName = "dashboard.html";
-      } else if (pathname === "/style.css") {
-        fileName = "style.css";
-        contentType = "text/css; charset=utf-8";
-      } else if (pathname === "/temperature" || pathname === "/temperature.html") {
-        fileName = "temperature.html";
-      } else if (pathname === "/humidity" || pathname === "/humidity.html") {
-        fileName = "humidity.html";
-      } else if (pathname === "/pump" || pathname === "/pump.html") {
-        fileName = "pump.html";
-      } else if (pathname.startsWith("/img/")) {
-        fileName = ".." + pathname;
-        if (pathname.endsWith(".png")) {
-          contentType = "image/png";
-        } else if (pathname.endsWith(".webp")) {
-          contentType = "image/webp";
-        } else {
-          contentType = "image/jpeg";
-        }
-      }
+    try {
+      await thing.emitEvent("environmentalData", reading);
+    } catch (error) {
+      console.error("[SENSORE] Pubblicazione dell'evento MQTT fallita:", error);
+    }
+  }, TELEMETRY_INTERVAL);
+}
 
-      if (fileName !== "") {
-        try {
-          const filePath = join(__dirname, "dashboard", fileName);
-          const content = readFileSync(filePath);
-          res.writeHead(200, { "Content-Type": contentType });
-          res.end(content);
-        } catch (err) {
-          res.writeHead(500);
-          res.end(`Errore caricamento risorsa: ${fileName}`);
-        }
-      } else {
-        res.writeHead(404);
-        res.end("Risorsa non trovata");
-      }
-    });
-
-    dashboardServer.listen(8081, () => {
-      console.log("[SENSORE] Dashboard Web attiva a: http://localhost:8081/");
-    });
-
-    // Loop periodico per la generazione e pubblicazione dei dati simulati (default: 15 secondi)
-    const TELEMETRY_INTERVAL = Number(process.env.TELEMETRY_INTERVAL) || 15000;
-
-    setInterval(async () => {
-      // Generazione dati in base alla serra attiva
-      if (activeGreenhouse === "tropical") {
-        // Serra Tropicale: più umida e con temperature moderate
-        latestTemperature = parseFloat((Math.random() * 8 + 24).toFixed(2)); // Tra 24°C e 32°C
-        latestHumidity = parseFloat((Math.random() * 25 + 25).toFixed(2));    // Tra 25% e 50%
-      } else {
-        // Serra Mediterranea: temperature miti e umidità moderata
-        latestTemperature = parseFloat((Math.random() * 8 + 18).toFixed(2));  // Tra 18°C e 26°C
-        latestHumidity = parseFloat((Math.random() * 30 + 30).toFixed(2));    // Tra 30% e 60%
-      }
-
-      const payload = {
-        temperature: latestTemperature,
-        humidity: latestHumidity
-      };
-
-      console.log(`[SENSORE] Rilevamento (${activeGreenhouse.toUpperCase()}) -> Temp: ${payload.temperature}°C, Umidità: ${payload.humidity}%`);
-
-      try {
-        // Pubblica i dati su MQTT tramite l'evento
-        await exposedThing.emitEvent("environmentalData", payload);
-      } catch (err) {
-        console.error("[SENSORE] Errore pubblicazione evento MQTT:", err);
-      }
-    }, TELEMETRY_INTERVAL);
-
-  } catch (error) {
-    console.error("[SENSORE] Impossibile creare o esporre il Thing del sensore:", error);
-  }
-}).catch((err) => {
-  console.error("[SENSORE] Errore all'avvio del Servient dei sensori:", err);
+main().catch((error) => {
+  console.error("[SENSORE] Avvio fallito:", error);
+  process.exitCode = 1;
 });

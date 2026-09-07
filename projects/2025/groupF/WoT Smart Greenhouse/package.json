@@ -9,7 +9,7 @@
     "start": "ts-node src/launcher.ts",
     "start:sensor": "ts-node src/sensors.ts",
     "start:pump": "ts-node src/actuators.ts",
-    "start:gateway": "ts-node src/orchestrator.ts",
+    "start:orchestrator": "ts-node src/orchestrator.ts",
     "start:prod": "node dist/launcher.js"
   },
   "dependencies": {

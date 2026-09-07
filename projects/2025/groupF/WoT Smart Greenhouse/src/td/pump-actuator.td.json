@@ -1,14 +1,16 @@
 {
   "@context": [
-    "https://www.w3.org/2019/wot/td/v1",
+    "https://www.w3.org/2022/wot/td/v1.1",
     {
-      "sosa": "http://www.w3.org/ns/sosa/"
+      "sosa": "http://www.w3.org/ns/sosa/",
+      "qudt": "http://qudt.org/schema/qudt/",
+      "unit": "http://qudt.org/vocab/unit/"
     }
   ],
+  "@type": "sosa:Actuator",
   "id": "urn:dev:wot:greenhouse-irrigation-pump-01",
   "title": "Pompa Irrigazione Serra",
-  "@type": "sosa:Actuator",
-  "description": "Un attuatore per la pompa di irrigazione controllato via HTTP all'interno di una serra intelligente.",
+  "description": "Attuatore della pompa di irrigazione di una serra intelligente, comandato via HTTP e protetto da Bearer token.",
   "securityDefinitions": {
     "api_key_sc": {
       "scheme": "bearer"
@@ -19,22 +21,40 @@
   ],
   "properties": {
     "pumpStatus": {
+      "@type": "sosa:ActuatableProperty",
       "type": "boolean",
       "title": "Stato della Pompa",
-      "description": "Vero se la pompa è attualmente in funzione, falso altrimenti.",
+      "description": "Vero se la pompa e' attualmente in funzione, falso altrimenti.",
       "readOnly": true
     }
   },
   "actions": {
     "turnOnPump": {
+      "@type": "sosa:Actuation",
       "title": "Avvia Pompa",
-      "description": "Attiva la pompa di irrigazione per una durata specificata in secondi.",
+      "description": "Attiva la pompa di irrigazione per la durata indicata. Modellata come Action perche' innesca un processo che modifica lo stato fisico nel tempo.",
+      "safe": false,
+      "idempotent": false,
       "input": {
         "type": "integer",
+        "title": "Durata Irrigazione",
+        "description": "Durata di funzionamento della pompa, in secondi.",
+        "qudt:unit": "unit:SEC",
         "minimum": 1,
-        "maximum": 300,
-        "description": "Durata in secondi di funzionamento della pompa."
+        "maximum": 300
+      },
+      "output": {
+        "type": "string",
+        "title": "Esito",
+        "description": "Messaggio di conferma dell'avvio del ciclo di irrigazione."
       }
     }
-  }
+  },
+  "links": [
+    {
+      "rel": "controlledBy",
+      "href": "http://localhost:8080/sensore-ambientale-serra",
+      "type": "application/td+json"
+    }
+  ]
 }

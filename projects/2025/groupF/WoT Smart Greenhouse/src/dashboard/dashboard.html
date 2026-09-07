@@ -167,8 +167,8 @@
             <div class="td-content">
               <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.8rem; margin-top: 0.4rem;">
                 Questo è il documento semantico JSON-LD recuperato direttamente dall'endpoint HTTP
-                del Servient locale: <a href="http://localhost:8080/greenhouse-environmental-sensor" target="_blank"
-                  style="color: #60a5fa; text-decoration: none; font-weight: 500;">http://localhost:8080/greenhouse-environmental-sensor</a>
+                del Servient locale: <a href="http://localhost:8080/sensore-ambientale-serra" target="_blank"
+                  style="color: #60a5fa; text-decoration: none; font-weight: 500;">http://localhost:8080/sensore-ambientale-serra</a>
               </p>
               <div class="td-wrapper">
                 <button class="btn-copy" onclick="copyTD()">Copia JSON</button>
@@ -207,6 +207,11 @@
     const PUMP_BASE_URL = "http://localhost:8082/pompa-irrigazione-serra";
     const PUMP_STATUS_URL = `${PUMP_BASE_URL}/properties/pumpStatus`;
     const PUMP_ACTION_URL = `${PUMP_BASE_URL}/actions/turnOnPump`;
+    // NOTA DI SICUREZZA: il token e' scritto nel codice della pagina solo per
+    // rendere immediata la demo di laboratorio. Essendo lato client e'
+    // leggibile da chiunque apra il sorgente: su questo percorso la protezione
+    // dell'attuatore e' di fatto aggirabile. In un sistema reale la pagina
+    // otterrebbe un token a tempo da un authorization server (OAuth2).
     const PUMP_TOKEN = "chiave-segreta-pompa";
 
     // Intervalli di polling della dashboard (in millisecondi)

@@ -1,122 +1,144 @@
+/**
+ * Orchestratore — ruolo WoT: Consumer.
+ *
+ * È il "cervello" della serra e l'unico componente che conosce entrambe le
+ * Thing. Il suo ciclo è quello canonico della WoT Scripting API:
+ *
+ *   requestThingDescription -> consume -> subscribeEvent / readProperty / invokeAction
+ *
+ * Da notare che in questo file non compaiono mai le parole HTTP o MQTT nelle
+ * chiamate di interazione: il protocollo da usare è scritto nei form delle
+ * Thing Description e lo risolve il runtime. È il Binding Template in azione.
+ */
+
 import { Servient } from "@node-wot/core";
 import { HttpClientFactory } from "@node-wot/binding-http";
 import { MqttClientFactory } from "@node-wot/binding-mqtt";
 
-// Configura il Servient WoT come consumer
-const servient = new Servient();
-servient.addClientFactory(new HttpClientFactory());
-servient.addClientFactory(new MqttClientFactory());
+import { PUMP_TOKEN, THING_IDS, THING_URLS } from "./config";
+import { GreenhouseType, isGreenhouseType, planIrrigation } from "./greenhouse";
 
-// Credenziali per accedere alla pompa protetta da token
-servient.addCredentials({
-  "urn:dev:wot:greenhouse-irrigation-pump-01": {
-    token: "chiave-segreta-pompa"
+/** Payload dell'evento environmentalData, come descritto dallo schema della TD. */
+interface EnvironmentalData {
+  temperature: number;
+  humidity: number;
+}
+
+/**
+ * Impedisce di sovrapporre due cicli di irrigazione.
+ *
+ * La telemetria arriva ogni pochi secondi, un ciclo può durarne trenta: senza
+ * questo flag l'orchestratore continuerebbe a comandare la pompa a ogni
+ * lettura sotto soglia, e l'attuatore rifiuterebbe i comandi con un errore.
+ */
+let irrigationInProgress = false;
+
+/** Recupera via HTTP la Thing Description all'URL indicato e la consuma. */
+async function consumeThing(wot: typeof WoT, url: string): Promise<WoT.ConsumedThing> {
+  const td = await wot.requestThingDescription(url);
+  return wot.consume(typeof td === "string" ? JSON.parse(td) : td);
+}
+
+async function main(): Promise<void> {
+  const servient = new Servient();
+  servient.addClientFactory(new HttpClientFactory());
+  servient.addClientFactory(new MqttClientFactory());
+
+  // Le credenziali dell'attuatore: node-wot le associa all'id del Thing e
+  // aggiunge da sé l'header Authorization: Bearer <token> alle richieste.
+  servient.addCredentials({ [THING_IDS.pump]: { token: PUMP_TOKEN } });
+
+  const wot = await servient.start();
+  console.log("[ORCHESTRATORE] Runtime avviato, recupero le Thing Description...");
+
+  const sensor = await consumeThing(wot, THING_URLS.sensor);
+  const pump = await consumeThing(wot, THING_URLS.pump);
+  console.log("[ORCHESTRATORE] Thing consumate.");
+
+  // Il sensore espone environmentalData su piu' form: Servient.expose() azzera
+  // quelle dichiarate nella TD e ogni server registrato genera le proprie, nel
+  // proprio ordine di registrazione — prima HTTP, poi MQTT. Senza formIndex il
+  // Consumer prende la prima, cioe' HTTP long polling; il canale MQTT resta
+  // comunque attivo perche' il sensore ci pubblica la telemetria. Vedi la nota
+  // "Binding effettivamente usato" nel readme: forzare formIndex sulla sola
+  // subscribe manderebbe in cache il client MQTT, che poi verrebbe riusato
+  // dalla readProperty qui sotto — e MqttClient.readResource() in node-wot 0.8
+  // non e' implementata. Lasciamo scegliere al runtime.
+
+  await sensor.subscribeEvent(
+    "environmentalData",
+    async (output: WoT.InteractionOutput) => {
+      try {
+        const { temperature, humidity } = (await output.value()) as EnvironmentalData;
+
+        // Il tipo di serra può cambiare a runtime: va riletto a ogni ciclo,
+        // perché determina sia la soglia sia le durate di irrigazione.
+        const greenhouse = await readActiveGreenhouse(sensor);
+        const plan = planIrrigation(greenhouse, humidity);
+
+        console.log(
+          `[ORCHESTRATORE] ${greenhouse.toUpperCase()} -> ${temperature} °C, ${humidity} %`
+        );
+
+        if (!plan) {
+          console.log("[ORCHESTRATORE] Umidità sufficiente, nessuna irrigazione.");
+          return;
+        }
+
+        if (irrigationInProgress) {
+          console.log("[ORCHESTRATORE] Sotto soglia, ma un ciclo è già in corso.");
+          return;
+        }
+
+        await runIrrigationCycle(pump, plan);
+      } catch (error) {
+        console.error("[ORCHESTRATORE] Errore nell'elaborazione della lettura:", error);
+      }
+    },
+    (error) => console.error("[ORCHESTRATORE] Errore sulla sottoscrizione:", error.message)
+  );
+
+  console.log("[ORCHESTRATORE] Sottoscritto alla telemetria del sensore.");
+}
+
+/** Legge la property activeGreenhouse, con fallback prudente in caso di valore inatteso. */
+async function readActiveGreenhouse(sensor: WoT.ConsumedThing): Promise<GreenhouseType> {
+  const value = await (await sensor.readProperty("activeGreenhouse")).value();
+  if (isGreenhouseType(value)) {
+    return value;
   }
-});
+  console.warn(`[ORCHESTRATORE] Tipo di serra inatteso (${String(value)}), uso "tropical".`);
+  return "tropical";
+}
 
-let isPumpRunning = false;
-
-console.log("[ORCHESTRATORE] Avvio...");
-
-servient.start().then(async (WoT) => {
-  console.log("[ORCHESTRATORE] Runtime avviato.");
+/**
+ * Comanda un ciclo di irrigazione e tiene il flag alzato per la sua durata.
+ *
+ * Il flag viene rilasciato anche se l'invocazione fallisce, altrimenti un
+ * singolo errore di rete bloccherebbe l'irrigazione per sempre.
+ */
+async function runIrrigationCycle(
+  pump: WoT.ConsumedThing,
+  plan: { durationSeconds: number; level: string }
+): Promise<void> {
+  irrigationInProgress = true;
+  const release = () => {
+    irrigationInProgress = false;
+  };
 
   try {
-    // Richiesta delle Thing Description dinamiche dai produttori
-    console.log("[ORCHESTRATORE] Caricamento TD sensore...");
-    const sensorTd = await WoT.requestThingDescription("http://localhost:8080/sensore-ambientale-serra");
-
-    console.log("[ORCHESTRATORE] Caricamento TD pompa...");
-    const pumpTd = await WoT.requestThingDescription("http://localhost:8082/pompa-irrigazione-serra");
-
-    // Consuma le Thing
-    const sensorThing = await WoT.consume(typeof sensorTd === "string" ? JSON.parse(sensorTd) : sensorTd);
-    const pumpThing = await WoT.consume(typeof pumpTd === "string" ? JSON.parse(pumpTd) : pumpTd);
-
-    console.log("[ORCHESTRATORE] Sottoscrizione eventi MQTT attiva.");
-
-    // Ascolta i dati dei sensori in arrivo via MQTT
-    await sensorThing.subscribeEvent("environmentalData", async (output) => {
-      try {
-        const data = (await output.value()) as { temperature: number; humidity: number };
-        const { temperature, humidity } = data;
-
-        console.log(`[ORCHESTRATORE] Ricevuto -> Temp: ${temperature}°C, Umidità: ${humidity}%`);
-
-        // Legge dinamicamente il tipo di serra attivo dal sensore
-        const activeGreenhouseOutput = await sensorThing.readProperty("activeGreenhouse");
-        const activeGreenhouse = (await activeGreenhouseOutput.value()) as string;
-
-        // Imposta la soglia di umidità in base alla serra attiva (Tropicale: 40%, Mediterranea: 30%)
-        const threshold = activeGreenhouse === "tropical" ? 40 : 30;
-        console.log(`[ORCHESTRATORE] Ricevuto -> Temp: ${temperature}°C, Umidità: ${humidity}% | Serra: ${activeGreenhouse.toUpperCase()} (Soglia: ${threshold}%)`);
-
-        // Logica di controllo dell'irrigazione
-        if (humidity < threshold) {
-          if (isPumpRunning) {
-            console.log(`[ORCHESTRATORE] Umidità sotto soglia (${humidity}%), ma la pompa è già in funzione.`);
-            return;
-          }
-
-          // Calcola la durata dell'irrigazione in base alla gravità della siccità e al tipo di serra
-          let duration = 10;
-          let level = "medio";
-
-          if (activeGreenhouse === "tropical") {
-            if (humidity >= 35) {
-              duration = 5;
-              level = "basso";
-            } else if (humidity >= 30) {
-              duration = 10;
-              level = "medio";
-            } else if (humidity >= 25) {
-              duration = 20;
-              level = "alto";
-            } else {
-              duration = 30;
-              level = "critico";
-            }
-          } else {
-            // Mediterranea
-            if (humidity >= 25) {
-              duration = 5;
-              level = "basso";
-            } else if (humidity >= 20) {
-              duration = 10;
-              level = "medio";
-            } else if (humidity >= 15) {
-              duration = 15;
-              level = "alto";
-            } else {
-              duration = 25;
-              level = "critico";
-            }
-          }
-
-          console.log(`[ORCHESTRATORE] Avvio irrigazione automatica (livello: ${level}, durata: ${duration}s)`);
-          isPumpRunning = true;
-
-          // Attiva la pompa tramite HTTP POST
-          await pumpThing.invokeAction("turnOnPump", duration);
-          console.log("[ORCHESTRATORE] Comando turnOnPump inviato all'attuatore.");
-
-          // Sblocca la pompa al termine dell'irrigazione
-          setTimeout(() => {
-            isPumpRunning = false;
-            console.log("[ORCHESTRATORE] Irrigazione conclusa, logica sbloccata.");
-          }, duration * 1000);
-
-        } else {
-          console.log(`[ORCHESTRATORE] Stato OK, umidità sufficiente per la serra corrente.`);
-        }
-      } catch (err: any) {
-        console.error("[ORCHESTRATORE] Errore nell'elaborazione del dato ricevuto:", err.message);
-      }
-    });
-
-  } catch (err: any) {
-    console.error("[ORCHESTRATORE] Errore durante l'inizializzazione:", err);
+    console.log(
+      `[ORCHESTRATORE] Irrigazione ${plan.level}: avvio pompa per ${plan.durationSeconds} s.`
+    );
+    await pump.invokeAction("turnOnPump", plan.durationSeconds);
+    setTimeout(release, plan.durationSeconds * 1000);
+  } catch (error) {
+    console.error("[ORCHESTRATORE] Comando turnOnPump fallito:", error);
+    release();
   }
-}).catch((err) => {
-  console.error("[ORCHESTRATORE] Impossibile avviare il runtime:", err);
+}
+
+main().catch((error) => {
+  console.error("[ORCHESTRATORE] Avvio fallito:", error);
+  process.exitCode = 1;
 });
