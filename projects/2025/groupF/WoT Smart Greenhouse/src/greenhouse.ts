@@ -68,8 +68,12 @@ export const GREENHOUSE_PROFILES: Record<GreenhouseType, GreenhouseProfile> = {
       { minHumidity: 0, durationSeconds: 25, level: "critico" },
     ],
     simulation: {
+      // Il minimo scende 15 punti sotto la soglia, come nel profilo tropicale
+      // (soglia 40, minimo 25): con un minimo pari alla soglia il simulatore
+      // non avrebbe mai prodotto una lettura sotto di essa, e l'irrigazione
+      // automatica non sarebbe mai scattata in questo profilo.
       temperature: { min: 18, max: 26 },
-      humidity: { min: 30, max: 60 },
+      humidity: { min: 15, max: 60 },
     },
   },
 };

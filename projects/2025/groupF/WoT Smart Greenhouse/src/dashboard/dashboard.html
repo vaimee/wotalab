@@ -4,734 +4,326 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WoT Smart Greenhouse - Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <title>Dashboard — WoT Smart Greenhouse</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
+  <div class="page">
 
-  <div class="container">
-
-    <!-- Top Header -->
-    <header>
-      <div class="header-title-container">
-        <a href="/index.html" class="btn-back-landing">← Seleziona Prototipo</a>
-        <div class="header-title">
-          <div style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
-            <h1>WoT Smart Greenhouse</h1>
-            <span class="active-prototype-badge" id="active-prototype-badge">...</span>
-          </div>
-          <p>Monitoraggio Ambientale in tempo reale basato su Standard W3C Web of Things</p>
-        </div>
+    <header class="topbar">
+      <a class="backlink" href="/index.html">← Prototipi</a>
+      <div class="titles">
+        <h1>WoT Smart Greenhouse</h1>
+        <p class="subtitle" id="profile-name">—</p>
       </div>
-      <div class="status-badge" id="status-badge">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="status-text">Connessione in corso...</span>
-      </div>
+      <span class="pill" id="link-state"><span class="dot"></span><span id="link-text">Connessione…</span></span>
     </header>
-    <!-- Main Side-by-Side Layout -->
-    <div class="main-layout">
-      
-      <!-- Left Column: Controls & Gauges -->
-      <div class="left-column">
-        
-        <div class="dashboard-grid">
 
-          <!-- Temperature Card -->
-          <div class="card temp" onclick="window.open('/temperature', '_blank')" style="cursor: pointer;">
-            <div class="card-header">
-              <span class="card-title">Temperatura Aria ↗</span>
-              <div class="card-icon">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                  <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="value-display">
-              <span class="big-value" id="temp-value" style="color: var(--accent);">--.-</span>
-              <span class="unit">°C</span>
-            </div>
-            <div class="range-bar-container">
-              <div class="range-bar" id="temp-bar"></div>
-            </div>
-            <div class="card-footer">
-              <span>Min: 20°C</span>
-              <span>Max: 35°C</span>
-            </div>
-            <!-- Ultime 5 letture -->
-            <div class="history-list-container">
-              <span class="history-list-title">Ultime 5 letture</span>
-              <div class="history-list" id="temp-last-five">
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-              </div>
-            </div>
+    <div class="stack">
+
+      <!-- Valori correnti -->
+      <div class="grid cols-2">
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Temperatura aria</h2>
+            <a class="card-note" href="/temperature">Dettaglio →</a>
           </div>
-
-          <!-- Humidity Card -->
-          <div class="card hum" onclick="window.open('/humidity', '_blank')" style="cursor: pointer;">
-            <div class="card-header">
-              <span class="card-title">Umidità Suolo ↗</span>
-              <div class="card-icon">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="value-display">
-              <span class="big-value" id="hum-value" style="color: #60a5fa;">--.-</span>
-              <span class="unit">%</span>
-            </div>
-            <div class="range-bar-container">
-              <div class="range-bar" id="hum-bar"></div>
-            </div>
-            <div class="card-footer">
-              <span>Min: 10%</span>
-              <span>Max: 60%</span>
-            </div>
-            <!-- Ultime 5 letture -->
-            <div class="history-list-container">
-              <span class="history-list-title">Ultime 5 letture</span>
-              <div class="history-list" id="hum-last-five">
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-                <div class="history-item"><span class="val">--</span><span class="time">--:--:--</span></div>
-              </div>
-            </div>
+          <div class="readout temp">
+            <span class="value" id="temp-value">—</span><span class="unit">°C</span>
           </div>
-
-          <!-- Pump Card -->
-          <div class="card pump" id="pump-card" onclick="if(!event.target.closest('button, select')){ window.open('/pump', '_blank'); }" style="cursor: pointer;">
-            <div class="card-header">
-              <span class="card-title">Pompa Irrigazione ↗</span>
-              <div class="card-icon">
-                <svg viewBox="0 0 24 24" width="22" height="22">
-                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-                  <circle cx="12" cy="14" r="2"></circle>
-                </svg>
-              </div>
+          <div class="gauge temp">
+            <div class="gauge-track"><div class="gauge-fill" id="temp-fill" style="width:0"></div></div>
+            <div class="gauge-scale">
+              <span id="temp-min">—</span>
+              <span>dominio della property</span>
+              <span id="temp-max">—</span>
             </div>
-            <div class="value-display">
-              <span class="big-value" id="pump-value">SPENTA</span>
-            </div>
-            <div class="pump-controls">
-              <div class="control-group">
-                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: 500;">Durata irrigazione:</span>
-                <select id="pump-duration">
-                  <option value="5">5 Secondi</option>
-                  <option value="10" selected>10 Secondi</option>
-                  <option value="30">30 Secondi</option>
-                  <option value="60">60 Secondi</option>
-                </select>
-              </div>
-              <button class="btn btn-pump" id="btn-pump" onclick="triggerPump()">Avvia Irrigazione</button>
-            </div>
-            <div class="card-footer">
-              <span>Stato: <span id="pump-status-badge" style="font-weight: 600;">Verifica...</span></span>
-              <span>Porta: 8082</span>
-            </div>
-          </div>
-
-          <!-- Chart Card -->
-          <div class="card chart-card">
-            <div class="card-header">
-              <span class="card-title">Trend Storico (Ultime 15 letture)</span>
-            </div>
-            <div style="position: relative; height: 230px; width: 100%;">
-              <canvas id="liveChart"></canvas>
-            </div>
-          </div>
-
-          <!-- Thing Description Explorer Card -->
-          <div class="card td-card" id="td-card">
-            <div class="td-header" onclick="toggleAccordion()">
-              <h2>W3C Thing Description Explorer</h2>
-              <div class="accordion-chevron">
-                <svg viewBox="0 0 24 24" width="20" height="20">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </div>
-            </div>
-            <div class="td-content">
-              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.8rem; margin-top: 0.4rem;">
-                Questo è il documento semantico JSON-LD recuperato direttamente dall'endpoint HTTP
-                del Servient locale: <a href="http://localhost:8080/sensore-ambientale-serra" target="_blank"
-                  style="color: #60a5fa; text-decoration: none; font-weight: 500;">http://localhost:8080/sensore-ambientale-serra</a>
-              </p>
-              <div class="td-wrapper">
-                <button class="btn-copy" onclick="copyTD()">Copia JSON</button>
-                <pre><code id="td-code">Caricamento in corso...</code></pre>
-              </div>
-            </div>
-          </div>
-
-        </div> <!-- End dashboard-grid -->
-      </div> <!-- End left-column -->
-
-      <!-- Right Column: Event Log Card (Always Visible) -->
-      <div class="right-column">
-        <div class="card log-card">
-          <div class="card-header" style="justify-content: space-between; align-items: center;">
-            <div class="terminal-header">
-              <span class="terminal-title">Registro Eventi & Attivazioni</span>
-            </div>
-            <button class="btn-clear" onclick="clearLogs()">Svuota</button>
-          </div>
-          <div class="log-container" id="log-container">
-            <!-- I log verranno inseriti dinamicamente qui -->
           </div>
         </div>
-      </div> <!-- End right-column -->
 
-    </div> <!-- End main-layout -->
+        <div class="card">
+          <div class="card-head">
+            <h2>Umidità suolo</h2>
+            <a class="card-note" href="/humidity">Dettaglio →</a>
+          </div>
+          <div class="readout hum">
+            <span class="value" id="hum-value">—</span><span class="unit">%</span>
+          </div>
+          <div class="gauge hum">
+            <div class="gauge-track">
+              <div class="gauge-fill" id="hum-fill" style="width:0"></div>
+              <div class="gauge-threshold" id="hum-threshold" style="left:0"></div>
+            </div>
+            <div class="gauge-scale">
+              <span id="hum-min">—</span>
+              <span>dominio della property</span>
+              <span id="hum-max">—</span>
+            </div>
+            <div class="gauge-legend">
+              <span class="tick"></span>
+              <span id="decision">—</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Andamento: due grandezze, due grafici, un asse ciascuno -->
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="card-head">
+            <h2>Temperatura — ultime letture</h2>
+            <span class="card-note">°C</span>
+          </div>
+          <div class="chart"><canvas id="temp-chart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Umidità — ultime letture</h2>
+            <span class="card-note">%</span>
+          </div>
+          <div class="chart"><canvas id="hum-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Attuatore e registro -->
+      <div class="grid cols-2">
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Pompa di irrigazione</h2>
+            <a class="card-note" href="/pump">Console →</a>
+          </div>
+          <p style="margin-bottom: 0.9rem;">
+            <span class="pill" id="pump-state"><span class="dot"></span><span id="pump-text">Verifica…</span></span>
+          </p>
+          <div class="controls">
+            <label class="field" style="flex: none;">
+              <span>Durata</span>
+              <select id="pump-duration">
+                <option value="5">5 secondi</option>
+                <option value="10" selected>10 secondi</option>
+                <option value="30">30 secondi</option>
+                <option value="60">60 secondi</option>
+              </select>
+            </label>
+            <button class="btn-primary" id="pump-button" style="align-self: end;">Avvia irrigazione</button>
+          </div>
+          <p class="card-note" style="margin-top: 0.85rem;">
+            Comando manuale. L'orchestratore irriga comunque da solo quando l'umidità scende
+            sotto la soglia.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Registro eventi</h2>
+            <button class="btn-ghost" id="log-clear" style="padding: 0.2rem 0.5rem; font-size: 0.78rem;">Svuota</button>
+          </div>
+          <div class="log" id="log"></div>
+        </div>
+
+      </div>
+
+      <!-- Thing Description -->
+      <details class="card td">
+        <summary>Thing Description del sensore (JSON-LD)</summary>
+        <p class="card-note" style="margin-bottom: 0.7rem;">
+          Documento servito da <code id="td-url"></code>. Nota che le <code>forms</code> non sono
+          quelle scritte nel file <code>.td.json</code>: le genera il runtime a partire dai server
+          registrati.
+        </p>
+        <pre><code id="td-body">Caricamento…</code></pre>
+      </details>
+
+    </div>
   </div>
 
+  <script src="/app.js"></script>
   <script>
-    // Configurazione Endpoint WoT locali
-    const BASE_URL = "http://localhost:8080/sensore-ambientale-serra";
-    const TEMP_URL = `${BASE_URL}/properties/temperature`;
-    const HUM_URL = `${BASE_URL}/properties/humidity`;
+    const type = activeGreenhouse({ redirect: true });
+    const profile = PROFILES[type];
 
-    const PUMP_BASE_URL = "http://localhost:8082/pompa-irrigazione-serra";
-    const PUMP_STATUS_URL = `${PUMP_BASE_URL}/properties/pumpStatus`;
-    const PUMP_ACTION_URL = `${PUMP_BASE_URL}/actions/turnOnPump`;
-    // NOTA DI SICUREZZA: il token e' scritto nel codice della pagina solo per
-    // rendere immediata la demo di laboratorio. Essendo lato client e'
-    // leggibile da chiunque apra il sorgente: su questo percorso la protezione
-    // dell'attuatore e' di fatto aggirabile. In un sistema reale la pagina
-    // otterrebbe un token a tempo da un authorization server (OAuth2).
-    const PUMP_TOKEN = "chiave-segreta-pompa";
+    document.getElementById("profile-name").textContent =
+      `${profile.label} · soglia di irrigazione ${profile.humidityThreshold}%`;
+    document.getElementById("td-url").textContent = WOT.sensor.td;
 
-    // Intervalli di polling della dashboard (in millisecondi)
-    const SENSOR_POLLING_INTERVAL = 15000; // Aggiorna temperatura e umidità (15s)
-    const PUMP_POLLING_INTERVAL = 10000;   // Controlla lo stato della pompa (10s)
+    /* --- Scale statiche derivate dal profilo attivo ---------------------- */
 
-    // Inizializzazione Dati Storici e Stati
-    const maxDataPoints = 15;
-    const labels = [];
-    const tempHistory = [];
-    const humHistory = [];
+    const tempRange = profile.temperature;
+    const humRange = profile.humidity;
 
-    // Array per gli ultimi 5 dati ricevuti
-    const lastFiveTemps = [];
-    const lastFiveHums = [];
+    // Le barre sono graduate sul dominio dichiarato dalla property nella TD,
+    // non sull'intervallo simulato: con la serra mediterranea la soglia (30%)
+    // coincide con il minimo simulato, e sulla scala ristretta finirebbe
+    // schiacciata contro il bordo, come se non ci fosse.
+    const tempScale = { min: METRICS.temperature.schema.minimum, max: METRICS.temperature.schema.maximum };
+    const humScale = { min: METRICS.humidity.schema.minimum, max: METRICS.humidity.schema.maximum };
 
-    let lastTemp = null;
-    let lastHum = null;
-    let lastPumpStatus = null;
-    let cachedTdString = "";
+    document.getElementById("temp-min").textContent = `${tempScale.min} °C`;
+    document.getElementById("temp-max").textContent = `${tempScale.max} °C`;
+    document.getElementById("hum-min").textContent = `${humScale.min} %`;
+    document.getElementById("hum-max").textContent = `${humScale.max} %`;
 
-    for (let i = 0; i < maxDataPoints; i++) {
-      labels.push("");
-      tempHistory.push(null);
-      humHistory.push(null);
-    }
+    // La tacca della soglia va posizionata sulla stessa scala della barra.
+    document.getElementById("hum-threshold").style.left =
+      `${positionIn(profile.humidityThreshold, humScale)}%`;
 
-    // Configurazione Grafico Chart.js
-    const ctx = document.getElementById('liveChart').getContext('2d');
+    /* --- Grafici --------------------------------------------------------- */
 
-    // Gradienti di colore per il grafico
-    const tempGradient = ctx.createLinearGradient(0, 0, 0, 200);
-    tempGradient.addColorStop(0, 'rgba(245, 158, 11, 0.15)');
-    tempGradient.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
-
-    const humGradient = ctx.createLinearGradient(0, 0, 0, 200);
-    humGradient.addColorStop(0, 'rgba(59, 130, 246, 0.15)');
-    humGradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
-
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: 'Temperatura (°C)',
-            data: tempHistory,
-            borderColor: '#f59e0b',
-            backgroundColor: tempGradient,
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#f59e0b',
-            pointBorderColor: 'rgba(255,255,255,0.1)',
-            pointHoverRadius: 6,
-            yAxisID: 'y'
-          },
-          {
-            label: 'Umidità (%)',
-            data: humHistory,
-            borderColor: '#3b82f6',
-            backgroundColor: humGradient,
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#3b82f6',
-            pointBorderColor: 'rgba(255,255,255,0.1)',
-            pointHoverRadius: 6,
-            yAxisID: 'y1'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: '#9ca3af',
-              font: { family: 'Outfit', size: 12, weight: '500' }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: '#6b7280', font: { family: 'Inter', size: 10 } }
-          },
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            min: 15,
-            max: 40,
-            grid: { color: 'rgba(255, 255, 255, 0.03)' },
-            ticks: { color: '#9ca3af', font: { family: 'Outfit', size: 11 } }
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            min: 0,
-            max: 70,
-            grid: { drawOnChartArea: false },
-            ticks: { color: '#9ca3af', font: { family: 'Outfit', size: 11 } }
-          }
-        }
-      }
+    const tempChart = createLineChart(document.getElementById("temp-chart"), {
+      color: cssColor("--series-temp"),
+      unit: "°C",
+      suggestedMin: tempRange.min - 2,
+      suggestedMax: tempRange.max + 2,
     });
 
-    // Funzione helper per JSON Syntax Highlighting
-    function syntaxHighlight(json) {
-      if (typeof json !== 'string') {
-        json = JSON.stringify(json, undefined, 2);
-      }
-      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
-        let cls = 'number';
-        if (/^"/.test(match)) {
-          if (/:$/.test(match)) {
-            cls = 'key';
-          } else {
-            cls = 'string';
-          }
-        } else if (/true|false/.test(match)) {
-          cls = 'boolean';
-        } else if (/null/.test(match)) {
-          cls = 'null';
-        }
-        return '<span class="' + cls + '">' + match + '</span>';
-      });
+    const humChart = createLineChart(document.getElementById("hum-chart"), {
+      label: "Umidità suolo",
+      color: cssColor("--series-hum"),
+      unit: "%",
+      suggestedMin: Math.min(humRange.min, profile.humidityThreshold) - 5,
+      suggestedMax: humRange.max + 5,
+      threshold: profile.humidityThreshold,
+    });
+
+    /* --- Sensori --------------------------------------------------------- */
+
+    let lastReading = null;
+
+    function setLink(online) {
+      const pill = document.getElementById("link-state");
+      pill.className = `pill ${online ? "is-good" : "is-bad"}`;
+      document.getElementById("link-text").textContent = online ? "Sensore online" : "Sensore irraggiungibile";
     }
 
-    // Funzione helper per aggiungere i log a schermo
-    function addLog(message, type = 'info') {
-      const logContainer = document.getElementById('log-container');
-      if (!logContainer) return;
-
-      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-      const logItem = document.createElement('div');
-      logItem.className = 'log-item';
-
-      const timeSpan = document.createElement('span');
-      timeSpan.className = 'log-time';
-      timeSpan.innerText = `[${now}]`;
-
-      const msgSpan = document.createElement('span');
-      msgSpan.className = `log-msg ${type}`;
-      msgSpan.innerText = message;
-
-      logItem.appendChild(timeSpan);
-      logItem.appendChild(msgSpan);
-
-      logContainer.appendChild(logItem);
-
-      // Mantieni massimo 50 log
-      while (logContainer.children.length > 50) {
-        logContainer.removeChild(logContainer.firstChild);
-      }
-
-      // Scroll in fondo
-      logContainer.scrollTop = logContainer.scrollHeight;
+    /** Mostra la decisione che l'orchestratore prenderebbe con questa umidità. */
+    function showDecision(humidity) {
+      const plan = planIrrigation(profile, humidity);
+      document.getElementById("decision").textContent = plan
+        ? `Sotto la soglia del ${profile.humidityThreshold}% → irrigazione ${plan.level}, ${plan.seconds}s`
+        : `Sopra la soglia del ${profile.humidityThreshold}% → nessuna irrigazione`;
     }
 
-    function clearLogs() {
-      const logContainer = document.getElementById('log-container');
-      if (logContainer) logContainer.innerHTML = '';
-      addLog("Storico dei log ripulito.", "info");
-    }
-
-    // Funzione per espandere/comprimere la visualizzazione della TD
-    function toggleAccordion() {
-      const card = document.getElementById('td-card');
-      card.classList.toggle('expanded');
-    }
-
-    // Funzione per copiare la TD negli appunti
-    function copyTD() {
-      if (!cachedTdString) return;
-      navigator.clipboard.writeText(cachedTdString).then(() => {
-        addLog("Thing Description copiata negli appunti con successo!", "success");
-        const btn = document.querySelector('.btn-copy');
-        btn.innerText = "Copiato!";
-        setTimeout(() => { btn.innerText = "Copia JSON"; }, 2000);
-      }).catch(err => {
-        addLog("Errore nella copia negli appunti.", "error");
-      });
-    }
-
-    // Funzione per aggiornare gli elementi grafici (barra di progresso e colore)
-    function updateBar(elementId, value, min, max) {
-      const percentage = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
-      document.getElementById(elementId).style.width = `${percentage}%`;
-    }
-
-    // Funzione per renderizzare la lista degli ultimi 5 dati ricevuti
-    function renderLastFive(elementId, dataArray) {
-      const container = document.getElementById(elementId);
-      if (!container) return;
-
-      container.innerHTML = "";
-
-      const displayData = [...dataArray];
-      while (displayData.length < 5) {
-        displayData.push({ value: "--", time: "--:--:--" });
-      }
-
-      displayData.forEach(item => {
-        const itemDiv = document.createElement("div");
-        itemDiv.className = "history-item";
-
-        const valSpan = document.createElement("span");
-        valSpan.className = "val";
-        valSpan.innerText = item.value;
-
-        const timeSpan = document.createElement("span");
-        timeSpan.className = "time";
-        timeSpan.innerText = item.time;
-
-        itemDiv.appendChild(valSpan);
-        itemDiv.appendChild(timeSpan);
-        container.appendChild(itemDiv);
-      });
-    }
-
-    // Aggiornamento dello Stato di Connessione della Dashboard
-    function setOnlineStatus(isOnline) {
-      const dot = document.getElementById('status-dot');
-      const text = document.getElementById('status-text');
-
-      if (isOnline) {
-        dot.className = "status-dot online";
-        text.innerText = "Online (Connesso a WoT HTTP)";
-        text.style.color = "var(--primary)";
-      } else {
-        dot.className = "status-dot offline";
-        text.innerText = "Offline (Tentativo di connessione...)";
-        text.style.color = "var(--danger)";
-      }
-    }
-
-    // Carica la Thing Description una sola volta all'avvio
-    async function fetchThingDescription() {
+    async function pollSensor() {
       try {
-        const response = await fetch(BASE_URL);
-        if (response.ok) {
-          const tdData = await response.json();
-          cachedTdString = JSON.stringify(tdData, null, 2);
-          document.getElementById('td-code').innerHTML = syntaxHighlight(tdData);
-        }
-      } catch (err) {
-        document.getElementById('td-code').innerText = "Errore durante il recupero della Thing Description. Assicurati che il Producer sia attivo.";
-      }
-    }
-
-    // Funzione principale di Polling dei Dati
-    async function updateDashboardData() {
-      try {
-        // Lettura in parallelo di Temperatura e Umidità dal server HTTP WoT
-        const [tempResponse, humResponse] = await Promise.all([
-          fetch(TEMP_URL),
-          fetch(HUM_URL)
+        const [temperature, humidity] = await Promise.all([
+          readValue(WOT.sensor.temperature),
+          readValue(WOT.sensor.humidity),
         ]);
 
-        if (tempResponse.ok && humResponse.ok) {
-          const temp = await tempResponse.json();
-          const hum = await humResponse.json();
+        document.getElementById("temp-value").textContent = temperature.toFixed(1);
+        document.getElementById("hum-value").textContent = humidity.toFixed(1);
+        document.getElementById("temp-fill").style.width = `${positionIn(temperature, tempScale)}%`;
+        document.getElementById("hum-fill").style.width = `${positionIn(humidity, humScale)}%`;
 
-          const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        showDecision(humidity);
 
-          // Popola lo storico delle ultime 5 letture prima di aggiornare i valori correnti
-          if (temp !== lastTemp || lastTemp === null) {
-            lastFiveTemps.unshift({ value: temp.toFixed(1) + " °C", time: nowTime });
-            if (lastFiveTemps.length > 5) lastFiveTemps.pop();
-            renderLastFive("temp-last-five", lastFiveTemps);
-          }
+        const now = clockTime();
+        pushPoint(tempChart, now, temperature);
+        pushPoint(humChart, now, humidity, { threshold: profile.humidityThreshold });
 
-          if (hum !== lastHum || lastHum === null) {
-            lastFiveHums.unshift({ value: hum.toFixed(1) + " %", time: nowTime });
-            if (lastFiveHums.length > 5) lastFiveHums.pop();
-            renderLastFive("hum-last-five", lastFiveHums);
-          }
+        // Il sensore campiona a intervalli suoi: logghiamo solo i valori nuovi.
+        if (temperature !== lastReading?.temperature || humidity !== lastReading?.humidity) {
+          log(`Lettura → ${temperature.toFixed(1)} °C, ${humidity.toFixed(1)} %`);
+          lastReading = { temperature, humidity };
+        }
 
-          // Controlla se i valori sono cambiati rispetto all'ultima lettura per loggarli
-          if (temp !== lastTemp || hum !== lastHum) {
-            addLog(`Sensori -> Temp: ${temp.toFixed(2)}°C, Umidità: ${hum.toFixed(2)}%`, "info");
-            lastTemp = temp;
-            lastHum = hum;
-          }
+        setLink(true);
+      } catch (error) {
+        setLink(false);
+      }
+    }
 
-          // Aggiorna Interfaccia Numerica
-          document.getElementById('temp-value').innerText = temp.toFixed(1);
-          document.getElementById('hum-value').innerText = hum.toFixed(1);
+    /* --- Attuatore ------------------------------------------------------- */
 
-          // Aggiorna Barre Visuali con range dinamici in base al prototipo
-          updateBar('temp-bar', temp, tempMin, tempMax);
-          updateBar('hum-bar', hum, humMin, humMax);
+    const pumpButton = document.getElementById("pump-button");
+    let lastPumpState = null;
 
-          // Aggiorna lo Storico per il Grafico
-          const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          chart.data.labels.push(now);
-          chart.data.datasets[0].data.push(temp);
-          chart.data.datasets[1].data.push(hum);
+    function paintPump({ state, text }) {
+      document.getElementById("pump-state").className = `pill ${state}`;
+      document.getElementById("pump-text").textContent = text;
+    }
 
-          // Mantieni solo gli ultimi N punti
-          if (chart.data.labels.length > maxDataPoints) {
-            chart.data.labels.shift();
-            chart.data.datasets[0].data.shift();
-            chart.data.datasets[1].data.shift();
-          }
+    async function pollPump() {
+      try {
+        const running = await readValue(WOT.pump.status, PUMP_TOKEN);
 
-          chart.update('none'); // Aggiorna grafico senza transizioni pesanti
-          setOnlineStatus(true);
+        paintPump(running
+          ? { state: "is-active", text: "In funzione" }
+          : { state: "", text: "Ferma" });
+        pumpButton.disabled = running;
+
+        if (lastPumpState !== null && running !== lastPumpState) {
+          log(running ? "Pompa accesa" : "Pompa spenta", running ? "warn" : "ok");
+        }
+        lastPumpState = running;
+      } catch (error) {
+        paintPump({ state: "is-bad", text: "Attuatore irraggiungibile" });
+        pumpButton.disabled = true;
+      }
+    }
+
+    pumpButton.addEventListener("click", async () => {
+      const seconds = Number(document.getElementById("pump-duration").value);
+      pumpButton.disabled = true;
+
+      try {
+        const response = await sendValue(WOT.pump.turnOn, seconds, { token: PUMP_TOKEN });
+        if (response.ok) {
+          log(`Comando turnOnPump inviato: ${seconds}s`, "ok");
         } else {
-          setOnlineStatus(false);
+          // 500 con "La pompa è già attiva" è la risposta attesa quando
+          // l'orchestratore sta già irrigando: non è un errore della pagina.
+          log(`turnOnPump rifiutato (HTTP ${response.status}): ${(await response.text()).trim()}`, "error");
         }
       } catch (error) {
-        setOnlineStatus(false);
+        log(`turnOnPump fallito: ${error.message}`, "error");
       }
-    }
 
-    // Funzione di Polling dello Stato della Pompa
-    async function updatePumpStatus() {
+      pollPump();
+    });
+
+    document.getElementById("log-clear").addEventListener("click", () => {
+      document.getElementById("log").replaceChildren();
+    });
+
+    /* --- Thing Description ------------------------------------------------ */
+
+    async function loadThingDescription() {
+      const body = document.getElementById("td-body");
       try {
-        const response = await fetch(PUMP_STATUS_URL, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${PUMP_TOKEN}`
-          }
-        });
-
-        if (response.ok) {
-          const isRunning = await response.json();
-          const pumpVal = document.getElementById('pump-value');
-          const pumpCard = document.getElementById('pump-card');
-          const pumpBadge = document.getElementById('pump-status-badge');
-          const btnPump = document.getElementById('btn-pump');
-
-          if (isRunning) {
-            pumpVal.innerText = "ATTIVA";
-            pumpCard.classList.add('active');
-            btnPump.classList.add('active');
-            btnPump.innerText = "Irrigazione Attiva...";
-            pumpBadge.innerText = "Collegata (Attiva)";
-            pumpBadge.style.color = "var(--cyan)";
-            btnPump.disabled = true; // Impedisce nuovi clic manuali durante l'attività
-
-            if (lastPumpStatus !== true) {
-              addLog("Attuatore Pompa -> Rilevato stato ATTIVO (Irrigazione in corso)", "success");
-              lastPumpStatus = true;
-            }
-          } else {
-            pumpVal.innerText = "SPENTA";
-            pumpCard.classList.remove('active');
-            btnPump.classList.remove('active');
-            btnPump.innerText = "Avvia Irrigazione";
-            pumpBadge.innerText = "Collegata (Spenta)";
-            pumpBadge.style.color = "var(--text-muted)";
-            btnPump.disabled = false;
-
-            if (lastPumpStatus !== false && lastPumpStatus !== null) {
-              addLog("Attuatore Pompa -> Rilevato stato SPENTO (Irrigazione conclusa)", "info");
-            }
-            lastPumpStatus = false;
-          }
-        } else {
-          setPumpDisconnected();
-        }
-      } catch (err) {
-        setPumpDisconnected();
+        body.textContent = JSON.stringify(await readValue(WOT.sensor.td), null, 2);
+      } catch (error) {
+        body.textContent = "Thing Description non raggiungibile: il Producer è attivo?";
       }
     }
 
-    // Gestione stato disconnesso della pompa
-    function setPumpDisconnected() {
-      const pumpVal = document.getElementById('pump-value');
-      const pumpCard = document.getElementById('pump-card');
-      const pumpBadge = document.getElementById('pump-status-badge');
-      const btnPump = document.getElementById('btn-pump');
+    /* --- Avvio ------------------------------------------------------------ */
 
-      pumpVal.innerText = "DISCON.";
-      pumpCard.classList.remove('active');
-      btnPump.classList.remove('active');
-      btnPump.innerText = "Avvia Irrigazione";
-      btnPump.disabled = true;
-      pumpBadge.innerText = "Disconnessa (Errore)";
-      pumpBadge.style.color = "var(--danger)";
+    async function start() {
+      log(`Dashboard avviata — profilo ${profile.label}`);
+
+      // La scelta fatta nella pagina di selezione va applicata al sensore:
+      // è una scrittura di property WoT, non uno stato solo del browser.
+      const response = await sendValue(WOT.sensor.activeGreenhouse, type, { method: "PUT" });
+      log(response.ok
+        ? `Property activeGreenhouse impostata su "${type}"`
+        : `Scrittura di activeGreenhouse fallita (HTTP ${response.status})`,
+        response.ok ? "ok" : "error");
+
+      loadThingDescription();
+      pollSensor();
+      pollPump();
+      setInterval(pollSensor, POLL_MS.sensor);
+      setInterval(pollPump, POLL_MS.pump);
     }
 
-    // Azione di Attivazione della Pompa
-    async function triggerPump() {
-      const durationSelect = document.getElementById('pump-duration');
-      const btnPump = document.getElementById('btn-pump');
-      const duration = Number(durationSelect.value);
-
-      btnPump.disabled = true;
-      btnPump.innerText = "Invio...";
-
-      try {
-        addLog(`Richiesta avvio irrigazione per ${duration} secondi...`, "info");
-        const response = await fetch(PUMP_ACTION_URL, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${PUMP_TOKEN}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(duration)
-        });
-
-        if (response.status === 204 || response.ok) {
-          addLog(`Azione inviata con successo! Pompa attivata per ${duration}s.`, "success");
-          await updatePumpStatus();
-        } else {
-          const text = await response.text();
-          addLog(`Errore avvio pompa (HTTP ${response.status}): ${text || 'La pompa potrebbe essere già attiva'}`, "error");
-          btnPump.disabled = false;
-          btnPump.innerText = "Avvia Irrigazione";
-        }
-      } catch (err) {
-        addLog(`Errore di connessione durante l'invio dell'azione: ${err.message}`, "error");
-        btnPump.disabled = false;
-        btnPump.innerText = "Avvia Irrigazione";
-      }
-    }
-
-    // Estrae e gestisce il tipo di prototipo dai parametri dell'URL o sessionStorage
-    const urlParams = new URLSearchParams(window.location.search);
-    let activeGreenhouseType = urlParams.get('type');
-    if (!activeGreenhouseType) {
-      activeGreenhouseType = sessionStorage.getItem('active_greenhouse_type');
-    }
-    if (!activeGreenhouseType || (activeGreenhouseType !== 'tropical' && activeGreenhouseType !== 'mediterranean')) {
-      // In assenza di un prototipo valido, reindirizza alla pagina di selezione
-      window.location.href = '/index.html';
-    } else {
-      sessionStorage.setItem('active_greenhouse_type', activeGreenhouseType);
-    }
-
-    // Imposta limiti e soglie dinamiche per le barre e grafici
-    let tempMin = 24, tempMax = 32;
-    let humMin = 25, humMax = 60;
-    if (activeGreenhouseType === 'mediterranean') {
-      tempMin = 18; tempMax = 26;
-      humMin = 20; humMax = 60;
-    }
-
-    // Funzione per impostare la serra attiva via HTTP (WoT Property Write)
-    const GREENHOUSE_URL = `${BASE_URL}/properties/activeGreenhouse`;
-
-    async function changeGreenhouseBackend(greenhouse) {
-      try {
-        const response = await fetch(GREENHOUSE_URL, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(greenhouse)
-        });
-        if (response.ok) {
-          addLog(`Configurato prototipo backend: ${greenhouse.toUpperCase()}`, "success");
-        } else {
-          addLog(`Errore configurazione backend: HTTP ${response.status}`, "error");
-        }
-      } catch (err) {
-        addLog(`Errore connessione backend: ${err.message}`, "error");
-      }
-    }
-
-    // Aggiorna gli elementi UI in base al tipo di serra selezionato
-    function updateUIDimensions() {
-      // Imposta badge nel titolo
-      const badge = document.getElementById('active-prototype-badge');
-      if (badge) {
-        badge.innerText = activeGreenhouseType === 'tropical' ? 'Serra Tropicale' : 'Serra Mediterranea';
-        badge.className = `active-prototype-badge ${activeGreenhouseType}`;
-      }
-
-      const tempFooter = document.querySelector('.card.temp .card-footer');
-      const humFooter = document.querySelector('.card.hum .card-footer');
-      
-      if (activeGreenhouseType === 'tropical') {
-        if (tempFooter) tempFooter.innerHTML = '<span>Min: 24°C</span><span>Max: 32°C</span>';
-        if (humFooter) humFooter.innerHTML = '<span>Soglia: 40%</span><span>Max: 60%</span>';
-        chart.options.scales.y.min = 20;
-        chart.options.scales.y.max = 35;
-        chart.options.scales.y1.min = 20;
-        chart.options.scales.y1.max = 60;
-      } else {
-        if (tempFooter) tempFooter.innerHTML = '<span>Min: 18°C</span><span>Max: 26°C</span>';
-        if (humFooter) humFooter.innerHTML = '<span>Soglia: 30%</span><span>Max: 60%</span>';
-        chart.options.scales.y.min = 15;
-        chart.options.scales.y.max = 30;
-        chart.options.scales.y1.min = 25;
-        chart.options.scales.y1.max = 70;
-      }
-      chart.update();
-    }
-
-    // Inizializzazione della dashboard
-    async function initDashboard() {
-      addLog("Dashboard inizializzata. Connessione ai nodi WoT...", "info");
-      
-      // Imposta la serra attiva sul backend e aggiorna l'interfaccia locale
-      await changeGreenhouseBackend(activeGreenhouseType);
-      updateUIDimensions();
-      
-      // Esegui la prima lettura e carica la TD
-      fetchThingDescription();
-      updateDashboardData();
-      updatePumpStatus();
-    }
-
-    // Avvio
-    initDashboard();
-
-    // Polling periodico
-    setInterval(updateDashboardData, SENSOR_POLLING_INTERVAL);
-    setInterval(updatePumpStatus, PUMP_POLLING_INTERVAL);
+    start();
   </script>
 </body>
 

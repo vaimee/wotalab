@@ -41,7 +41,7 @@ sia le condizioni ambientali simulate sia la politica di irrigazione:
 | Configurazione | Temperatura simulata | Umidità simulata | Soglia di irrigazione |
 | :--- | :--- | :--- | :--- |
 | `tropical` | 24–32 °C | 25–50 % | umidità < **40 %** |
-| `mediterranean` | 18–26 °C | 30–60 % | umidità < **30 %** |
+| `mediterranean` | 18–26 °C | 15–60 % | umidità < **30 %** |
 
 ---
 
@@ -96,6 +96,11 @@ irrigherebbe troppo per deficit piccoli e troppo poco per suoli molto secchi.
 | deficit medio | ≥ 30 % → **10 s** | ≥ 20 % → **10 s** |
 | deficit alto | ≥ 25 % → **20 s** | ≥ 15 % → **15 s** |
 | stato critico | < 25 % → **30 s** | < 15 % → **25 s** |
+
+L'intervallo simulato scende in entrambi i profili 15 punti sotto la propria soglia, così
+gli scaglioni sono davvero raggiungibili. Lo scaglione *critico* fa eccezione: è il ramo di
+sicurezza della funzione e la simulazione non produce letture tanto basse, in nessuno dei
+due profili.
 
 Un flag nell'orchestratore impedisce di sovrapporre due cicli: la telemetria arriva ogni
 pochi secondi mentre un ciclo può durarne trenta. L'attuatore applica lo stesso vincolo lato
@@ -211,7 +216,7 @@ src/
 ├── dashboard-server.ts   Server statico della dashboard
 ├── launcher.ts           Avvio unificato dei tre componenti
 ├── td/                   Le due Thing Description in JSON-LD
-└── dashboard/            Pagine HTML, CSS e script della dashboard
+└── dashboard/            Pagine HTML, style.css e app.js condivisi
 ```
 
 Ogni modulo ha una responsabilità sola. La logica di controllo sta in funzioni pure senza
@@ -231,15 +236,36 @@ configurabili non sono ripetuti nei file ma importati da `config.ts`.
 
 ## Interfaccia utente
 
-Dashboard sulla porta **8081**, con quattro pagine:
+Dashboard sulla porta **8081**:
 
-* **`/`** — panoramica: valori correnti, stato della pompa, storico FIFO delle ultime 5
-  letture, selezione della configurazione di serra, override manuale dell'irrigazione, e la
-  Thing Description del sensore scaricata live dall'endpoint.
-* **`/temperature`** e **`/humidity`** — grafico Chart.js delle letture e dettaglio
-  dell'endpoint WoT corrispondente.
-* **`/pump`** — console protetta: richiede il Bearer token, poi sblocca il controllo manuale
-  con un log locale delle attivazioni.
+* **`/`** — scelta del profilo di serra, che scrive la property `activeGreenhouse`.
+* **`/dashboard`** — vista operativa: valori correnti, andamento, stato e comando della
+  pompa, registro eventi e la Thing Description scaricata live dall'endpoint.
+* **`/temperature`** e **`/humidity`** — dettaglio di una singola property: andamento,
+  tabella delle letture e affordance WoT corrispondente.
+* **`/pump`** — console dell'attuatore, per esercitare lo schema `bearer`.
+
+**Come l'interfaccia spiega il sistema.** La barra dell'umidità porta la tacca della soglia
+di irrigazione, e sotto di essa la dashboard scrive la decisione che l'orchestratore
+prenderebbe con la lettura corrente (*"Sotto la soglia del 40% → irrigazione basso, 5s"*).
+È il pezzo che rende leggibile il comportamento della serra: prima la soglia era solo un
+numero nel piè di pagina di una card, e guardando lo schermo non si capiva perché la pompa
+partisse.
+
+**Scelte di visualizzazione.** Temperatura e umidità stanno in due grafici affiancati con un
+asse ciascuno, non più sovrapposte in un unico grafico a doppio asse: con due scale diverse
+l'allineamento fra le due curve è arbitrario e suggerisce correlazioni che nei dati non ci
+sono. Le barre sono graduate sul dominio dichiarato dalla property nella TD (0–100 % per
+l'umidità, 15–35 °C per la temperatura), non sull'intervallo simulato, così la soglia resta
+leggibile in entrambi i profili. La coppia di colori delle due serie è stata verificata per
+contrasto sul fondo scuro e per distinguibilità in caso di daltonismo.
+
+**Un solo tema e una sola configurazione.** `style.css` è l'unico foglio di stile e `app.js`
+l'unico posto in cui vivono endpoint, soglie e profili. Prima ogni pagina portava il proprio
+blocco `<style>` — `--accent` valeva verde, arancio, blu o ciano a seconda del file — e
+ridichiarava per conto suo limiti e soglie, che infatti divergevano fra loro e dal backend.
+Per la stessa ragione `/temperature` e `/humidity` sono servite dallo stesso `metric.html`,
+che si configura dal pathname: erano due file di 341 righe che differivano per 34.
 
 ---
 

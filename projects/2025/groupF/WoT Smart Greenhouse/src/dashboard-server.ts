@@ -10,14 +10,22 @@ import { createServer, Server } from "http";
 import { readFile } from "fs/promises";
 import { extname, join, normalize } from "path";
 
-/** Percorsi "puliti" della dashboard mappati sui file che li servono. */
+/**
+ * Percorsi "puliti" della dashboard mappati sui file che li servono.
+ *
+ * /temperature e /humidity puntano allo stesso documento: metric.html si
+ * configura dal pathname, invece di esistere in due copie quasi identiche.
+ */
 const ROUTES: Record<string, string> = {
   "/": "index.html",
   "/dashboard": "dashboard.html",
-  "/temperature": "temperature.html",
-  "/humidity": "humidity.html",
+  "/temperature": "metric.html",
+  "/humidity": "metric.html",
   "/pump": "pump.html",
 };
+
+/** Asset serviti direttamente dalla cartella della dashboard. */
+const ASSETS = new Set(["/style.css", "/app.js"]);
 
 const CONTENT_TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -41,9 +49,9 @@ function resolveFile(pathname: string): string | null {
     return join(__dirname, "dashboard", route);
   }
 
-  // Asset serviti direttamente: foglio di stile e immagini.
-  if (pathname === "/style.css") {
-    return join(__dirname, "dashboard", "style.css");
+  // Asset serviti direttamente: foglio di stile, script condiviso e immagini.
+  if (ASSETS.has(pathname)) {
+    return join(__dirname, "dashboard", pathname.slice(1));
   }
   if (pathname.startsWith("/img/")) {
     const candidate = normalize(join(__dirname, pathname));

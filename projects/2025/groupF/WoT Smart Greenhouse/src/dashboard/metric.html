@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dettaglio grandezza — WoT Smart Greenhouse</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<!--
+  Una sola pagina serve sia /temperature sia /humidity: si configura dal
+  pathname. Prima erano due file di 341 righe che differivano per 34, quasi
+  tutte colori e limiti degli assi.
+-->
+
+<body>
+  <div class="page">
+
+    <header class="topbar">
+      <a class="backlink" href="/dashboard.html">← Dashboard</a>
+      <div class="titles">
+        <h1 id="title">—</h1>
+        <p class="subtitle" id="subtitle">—</p>
+      </div>
+      <span class="pill" id="link-state"><span class="dot"></span><span id="link-text">Connessione…</span></span>
+    </header>
+
+    <div class="stack">
+
+      <div class="grid cols-3 top">
+        <div class="card">
+          <div class="card-head"><h2>Valore corrente</h2></div>
+          <div class="readout" id="readout">
+            <span class="value" id="value">—</span><span class="unit" id="unit"></span>
+          </div>
+          <div class="gauge" id="gauge">
+            <div class="gauge-track">
+              <div class="gauge-fill" id="fill" style="width:0"></div>
+              <div class="gauge-threshold" id="threshold" hidden></div>
+            </div>
+            <div class="gauge-scale">
+              <span id="range-min">—</span>
+              <span>dominio della property</span>
+              <span id="range-max">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+          <div class="card-head">
+            <h2 id="chart-title">Andamento</h2>
+            <span class="card-note" id="chart-unit"></span>
+          </div>
+          <div class="chart"><canvas id="chart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid cols-3 top">
+
+        <div class="card">
+          <div class="card-head"><h2>Affordance WoT</h2></div>
+          <div class="kv">
+            <div>
+              <span class="k">Endpoint di lettura</span>
+              <span class="v" id="endpoint">—</span>
+            </div>
+            <div>
+              <span class="k">Annotazione semantica</span>
+              <span class="v" id="semantic">—</span>
+            </div>
+            <div>
+              <span class="k">Schema dati (dalla TD)</span>
+              <span class="v" id="schema">—</span>
+            </div>
+            <div>
+              <span class="k">Operazione</span>
+              <span class="v">readproperty · sola lettura</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+          <div class="card-head">
+            <h2>Letture acquisite</h2>
+            <span class="card-note">le stesse del grafico, in tabella</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Ora</th><th>Valore</th><th>Protocollo</th></tr>
+              </thead>
+              <tbody id="rows">
+                <tr><td colspan="3" class="empty">In attesa della prima lettura…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    // La rotta decide quale grandezza mostrare: /humidity oppure /temperature.
+    const metric = location.pathname.includes("humidity") ? METRICS.humidity : METRICS.temperature;
+    const profile = PROFILES[activeGreenhouse()];
+    const range = profile[metric.key];
+
+    // La soglia riguarda solo l'umidità: è lei a far scattare l'irrigazione.
+    const threshold = metric.key === "humidity" ? profile.humidityThreshold : undefined;
+
+    /* --- Testi statici ---------------------------------------------------- */
+
+    document.title = `${metric.label} — WoT Smart Greenhouse`;
+    document.getElementById("title").textContent = metric.label;
+    document.getElementById("subtitle").textContent =
+      `${profile.label} · property in sola lettura del sensore ambientale`;
+    document.getElementById("unit").textContent = metric.unit;
+    document.getElementById("chart-title").textContent = `Andamento — ultime ${20} letture`;
+    document.getElementById("chart-unit").textContent = metric.unit;
+    // Come nella dashboard, la barra e' graduata sul dominio della property.
+    const scale = { min: metric.schema.minimum, max: metric.schema.maximum };
+    document.getElementById("range-min").textContent = `${scale.min} ${metric.unit}`;
+    document.getElementById("range-max").textContent = `${scale.max} ${metric.unit}`;
+    document.getElementById("endpoint").textContent = `GET ${metric.url}`;
+    document.getElementById("semantic").textContent = metric.semantic;
+    document.getElementById("schema").textContent = JSON.stringify(metric.schema);
+
+    // Le classi colore seguono la grandezza, così il blu resta l'umidità
+    // e l'arancio la temperatura in tutte le pagine.
+    const tone = metric.key === "humidity" ? "hum" : "temp";
+    document.getElementById("readout").classList.add(tone);
+    document.getElementById("gauge").classList.add(tone);
+
+    if (threshold !== undefined) {
+      const tick = document.getElementById("threshold");
+      tick.hidden = false;
+      tick.style.left = `${positionIn(threshold, scale)}%`;
+    }
+
+    /* --- Grafico ---------------------------------------------------------- */
+
+    const chart = createLineChart(document.getElementById("chart"), {
+      label: metric.label,
+      color: cssColor(metric.key === "humidity" ? "--series-hum" : "--series-temp"),
+      unit: metric.unit,
+      suggestedMin: (threshold === undefined ? range.min : Math.min(range.min, threshold)) - 3,
+      suggestedMax: range.max + 3,
+      threshold,
+    });
+
+    /* --- Tabella ---------------------------------------------------------- */
+
+    const rows = document.getElementById("rows");
+    let hasRows = false;
+
+    function addRow(time, value) {
+      if (!hasRows) {
+        rows.replaceChildren();
+        hasRows = true;
+      }
+      const row = document.createElement("tr");
+      row.innerHTML = `<td></td><td></td><td class="mono">HTTP GET</td>`;
+      row.children[0].textContent = time;
+      row.children[1].textContent = `${value.toFixed(2)} ${metric.unit}`;
+      rows.prepend(row);
+      while (rows.children.length > 20) rows.lastElementChild.remove();
+    }
+
+    /* --- Polling ---------------------------------------------------------- */
+
+    async function poll() {
+      const pill = document.getElementById("link-state");
+      try {
+        const value = await readValue(metric.url);
+        const now = clockTime();
+
+        document.getElementById("value").textContent = value.toFixed(1);
+        document.getElementById("fill").style.width = `${positionIn(value, scale)}%`;
+        pushPoint(chart, now, value, { threshold });
+        addRow(now, value);
+
+        pill.className = "pill is-good";
+        document.getElementById("link-text").textContent = "Sensore online";
+      } catch (error) {
+        pill.className = "pill is-bad";
+        document.getElementById("link-text").textContent = "Sensore irraggiungibile";
+      }
+    }
+
+    poll();
+    setInterval(poll, POLL_MS.sensor);
+  </script>
+</body>
+
+</html>
