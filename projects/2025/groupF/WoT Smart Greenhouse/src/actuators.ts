@@ -14,7 +14,7 @@
 import { Servient } from "@node-wot/core";
 import { HttpServer } from "@node-wot/binding-http";
 
-import { BASE_URIS, PORTS, PUMP_TOKEN, THING_IDS } from "./config";
+import { BASE_URIS, PORTS, PUMP_TOKEN, THING_IDS, THING_URLS } from "./config";
 import { PUMP_TITLE, loadPumpThingDescription } from "./thing-description";
 
 /** Limiti accettati per la durata, coerenti con l'input schema della TD. */
@@ -106,6 +106,7 @@ async function main(): Promise<void> {
 
   await thing.expose();
   console.log(`[ATTUATORE] Thing "${PUMP_TITLE}" online, HTTP protetto sulla porta ${PORTS.pump}.`);
+  console.log(`[ATTUATORE] TD disponibile su ${THING_URLS.pump}`);
 }
 
 main().catch((error) => {

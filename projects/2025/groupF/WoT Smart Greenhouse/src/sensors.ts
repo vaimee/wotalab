@@ -12,7 +12,7 @@ import { Servient } from "@node-wot/core";
 import { HttpServer } from "@node-wot/binding-http";
 import { MqttBrokerServer, MqttClientFactory } from "@node-wot/binding-mqtt";
 
-import { BASE_URIS, MQTT_BROKER, PORTS, TELEMETRY_INTERVAL } from "./config";
+import { BASE_URIS, MQTT_BROKER, PORTS, TELEMETRY_INTERVAL, THING_URLS } from "./config";
 import {
   GreenhouseType,
   isGreenhouseType,
@@ -59,6 +59,7 @@ async function main(): Promise<void> {
 
   await thing.expose();
   console.log(`[SENSORE] Thing "${SENSOR_TITLE}" online su HTTP e MQTT.`);
+  console.log(`[SENSORE] TD disponibile su ${THING_URLS.sensor}`);
 
   startDashboardServer(PORTS.dashboard);
 

@@ -18,6 +18,7 @@ import { extname, join, normalize } from "path";
  */
 const ROUTES: Record<string, string> = {
   "/": "index.html",
+  "/index": "index.html",
   "/dashboard": "dashboard.html",
   "/temperature": "metric.html",
   "/humidity": "metric.html",
