@@ -316,20 +316,6 @@ lezione. La TD dichiara solo il **meccanismo** (`"scheme": "bearer"`), che è un
 Security Metadata*; il token è un *Private Security Data* e vive nel Servient, iniettato con
 `addCredentials`, mai nel documento TD. È la separazione prescritta dalla *WoT Architecture*.
 
-**Cosa resta scoperto**, e ne siamo consapevoli:
-
-* **Il canale di telemetria non è autenticato.** La TD del sensore usa `nosec`, quindi
-  l'endpoint HTTP da cui l'orchestratore riceve gli eventi è aperto a chiunque raggiunga la
-  porta 8080, e altrettanto lo è la scrittura di `activeGreenhouse`, che cambia la soglia di
-  irrigazione. Il broker è a sua volta configurato con `allow_anonymous true`: oggi nessuno
-  consuma quel topic, ma il giorno in cui un Consumer ci si sottoscrivesse basterebbe
-  pubblicarci sopra letture di umidità false per far irrigare la serra. Le difese reali
-  sarebbero uno schema di sicurezza anche sul sensore e MQTT su TLS con credenziali,
-  dichiarate nella TD come `basic` o `psk`.
-* **Il token della dashboard è lato client.** In `dashboard.html` è una costante JavaScript:
-  chiunque apra il sorgente della pagina lo legge, quindi su quel percorso la protezione
-  dell'attuatore è aggirabile. In un sistema reale la pagina otterrebbe un token a tempo da
-  un authorization server via OAuth2, senza mai conservarlo nel codice.
 
 ---
 
